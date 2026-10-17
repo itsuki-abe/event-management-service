@@ -7,7 +7,11 @@ import { defineConfig } from "vite";
 const config = defineConfig({
 	resolve: { tsconfigPaths: true },
 	plugins: [
-		cloudflare({ viteEnvironment: { name: "ssr" } }),
+		cloudflare({
+			viteEnvironment: { name: "ssr" },
+			inspectorPort:
+				process.env.DISABLE_DEV_INSPECTOR === "1" ? false : undefined,
+		}),
 		tailwindcss(),
 		tanstackStart(),
 		viteReact(),

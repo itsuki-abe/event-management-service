@@ -1,0 +1,4 @@
+# This prototype needs no API keys or environment variables.
+# Decisions API and GPT-LIVE are intentionally mocked; provider contracts are unresolved.
+# No external-service variable names are consumed or assumed by this implementation.
+# Keep future credentials server-side. Never prefix secrets with VITE_.

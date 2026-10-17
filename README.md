@@ -1,75 +1,146 @@
-# Event management service
+# EN — Event Management Prototype
 
-TanStack Start・React・TypeScript、Cloudflare Workers / D1、Drizzle ORMで構成した開発環境です。パッケージ管理にはBunを使います。
+イベントの受付からチーム編成、気軽なLT登壇までを一続きに試す、日本語のクリック可能なプロトタイプです。
+既存の **TanStack Start / React / TypeScript / Cloudflare Workers / D1 / Drizzle** 構成を維持しています。
 
-## 開発を始める
+> **デモ専用です。本番運用・実際の個人情報の入力には使用しないでください。**
+> 認証・権限管理・サーバーへの業務データ保存はありません。すべての人物と受付トークンは架空です。
 
-Node.js 22.12以降とBun 1.3.13を用意してください。
+## まず動かす
+
+Node.js 22.12 以降と Bun 1.3.13 を使用します。テスト実行は Node.js 22.18 以降を推奨します（検証環境: Node 24）。
 
 ```sh
-bun install
+bun install --frozen-lockfile
 bun run db:migrate
-bun run cf-typegen
 bun run dev
 ```
 
-http://localhost:3000 で起動します。開発時のD1はローカルの `.wrangler/state` に保存します。Cloudflareへのログインや環境変数の設定は不要です。
+http://localhost:3000 を開いてください。CloudflareログインやAPIキーは不要です。
+D1の既存スキーマはローカルの `.wrangler/state` に作成されます。今回のデモ状態はD1ではなくブラウザの localStorage に保存します。
 
-## スキーマを変更する
+### 5分で触る順番
 
-`src/db/schema.ts` を編集して、SQLを生成・適用します。初期スキーマには、ID・タイトル・作成日時を持つ `events` テーブルがあります。
+1. **ダッシュボード**: 架空の参加者12名、受付8名、確認待ち3名、3チーム、登壇中1名と待機3名から開始。
+2. **参加者を追加**: 架空のニックネーム・希望役割・架空の年齢区分を入力。デモQRと `DEMO-013` のような受付コードを発行。
+3. **参加者・受付**: QRの文字列を入力して受付。未成年/未回答のデモ参加者は「自己申告を確認」のチェック後にスタッフが承認。
+4. **チーム編成**: 2〜6チームへ再編成。希望役割と人数のバランスを取り、各メンバーの選択欄で手動調整。
+5. **参加者ビュー**: 追加した参加者を選び、LTのタイトルと3/5/10分の持ち時間を設定して発券。
+6. **LT・ステージ**: 現在のLTを終了 → 次の人を呼ぶ → 登壇を開始 → 終了。キャンセルした番号は飛ばします。
+7. **会場スクリーン**: `/display` を同じブラウザの別タブで開く。リアクション、お知らせ、LT/チーム/受付状況の投影テンプレートを操作。
+8. 左下の **デモをリセット** で初期状態へ。リセット前に確認画面が出ます。
 
-```sh
-bun run db:generate
-bun run db:migrate
-```
+スマートフォン幅にも対応しています。スタッフ/参加者のビュー切り替えはデモ用で、アクセス制御ではありません。
 
-生成した `drizzle/` 配下のSQLとメタデータをGitに含めてください。適用済みマイグレーションは再実行時にスキップします。
+## 実装済み / モック / 今後の実装
 
-## 動作を確認する
+| 機能 | 今回試せること | 本実装で必要なこと |
+|---|---|---|
+| ユーザー管理 | 架空参加者の登録、検索、表示切り替え | 認証、スタッフ権限、サーバー永続化 |
+| Decisions API | 明示したモック境界 | **名称の意味・提供元・認証・責務の確認が先**。特定サービスと解釈していません |
+| 出席QR | 実際のQR SVG生成、デモトークン入力による受付、重複受付の冪等性 | カメラスキャン、署名/期限/失効、本人との対応付け |
+| 未成年確認・承認 | 架空の自己申告、明示的なスタッフ確認、承認/見送り | 運営ポリシー、必要に応じた本人確認/保護者同意、保存期間とアクセス制限 |
+| 自動チーム編成 | 希望役割と人数を使う決定的アルゴリズム、手動変更 | 実運用の制約定義、変更履歴、同時操作対策 |
+| スライド投影 | LT/チーム/受付/お知らせの4テンプレート、全画面ボタン | 外部スライド取込、スライドファイル作成は未実装 |
+| LTチケット | 連番発券、重複抑止、待機/呼出/登壇/終了/キャンセル、履歴 | トランザクション、並行発券・進行制御 |
+| リアクション | 登壇中LTへの3種類の反応、別タブへの表示反映 | 複数端末の配信、レート制限、荒らし対策 |
+| GPT-LIVE / 補足情報 | 固定サンプルの説明と用語カード | **意味・提供元・必要な入力を確認**。音声認識/AI生成/外部送信はしていません |
+| ピザ等のイベント対応 | お知らせ作成・削除、ピザ到着の定型文、スクリーン反映 | 通知の配信先、スタッフ権限 |
+| Meet風の画面共有 | 利用者のクリック後に `getDisplayMedia` で選択し、**同じ画面内だけ**でプレビュー/停止 | WebRTC、シグナリング、受信側、必要ならTURN。別タブ/端末への映像配信は未実装 |
+
+生年月日・メールアドレス・実際の未成年情報は収集しません。AIによる年齢推定は行いません。
+
+## 状態と設計
+
+- `src/prototype/domain.ts`: ブラウザ非依存の型・不変な状態更新・入力検証。年齢区分をチーム編成には使用しません。
+- `src/prototype/domain.test.ts`: 登録/承認/受付、編成、LT遷移、重複/不正操作のユニットテスト。
+- `src/prototype/store.ts`: SSRの初期表示 + localStorage保存 + `storage` イベントによる別タブ同期。
+- `src/prototype/EventApp.tsx`: スタッフ/参加者の画面、画面共有プレビュー。
+- `src/prototype/DisplayView.tsx`: 会場投影画面。
+- `src/prototype/adapters.ts`: Decisions API / GPT-LIVE の未確定な外部連携を明示するモック境界。
+- `tests/prototype.spec.ts`: 登録から投影までのE2E、キャンセル/戻る/リセット/画面共有拒否、レスポンシブ確認。
+- `src/routes/api.health.ts`, `src/db/`, `drizzle/`: 既存のDrizzle/D1ヘルスチェックを維持。プロトタイプの業務データとは未接続。
+
+### 大事な制限
+
+- 保存と同期は **同一オリジン・同一ブラウザプロファイル** のみ。スマホとPCの間では同期しません。
+- 複数タブの同時更新はlast-write-winsで、データベースのトランザクションはありません。
+- デモQRは予測可能な単純文字列であり、認証情報ではありません。
+- localStorageは開発者ツールで編集可能です。信頼できるデータソースにはできません。
+- リアクションは匿名デモで、連打/再送制限はありません。
+- 再編成は手動調整を置き換えます。手動移動では人数の偏りを許容します。
+- 画面共有は対応するデスクトップブラウザとセキュアコンテキスト（localhost/HTTPS）が必要です。キャンセル・未対応は画面内で表示し、接続成功に見せかけません。
+- 画面共有を開始したページから移動するとキャプチャを停止します。録画・アップロード・外部送信はしません。
+
+## 確認コマンド
 
 ```sh
 bun run check
+bun run test
+bun run test:ui
 bun run typecheck
 bun run build
 ```
 
-開発サーバーの起動中に、SSRとDrizzle経由のD1接続を確認します。
+`test:ui` は jsdom 上で受付から投影、キャンセル、保存失敗時の動作を検証します。実ブラウザの描画・ネイティブ画面共有の検証とは別です。
+
+ブラウザE2E（初回のみChromiumを用意）:
+
+```sh
+bunx playwright install chromium
+bun run test:e2e
+```
+
+既存のChromiumを使用する場合:
+
+```sh
+PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium bun run test:e2e
+```
+
+E2Eは必要に応じて開発サーバーを起動します。`test-results/` にスクリーンショットと失敗時のトレースを出力します。
+
+開発サーバー起動中のSSR/D1スモークテスト:
 
 ```sh
 bun run test:smoke
 ```
 
-`GET /api/health` が `events` テーブルを問い合わせ、成功時に `{"status":"ok","database":"connected"}` を返します。マイグレーション未適用や接続失敗時はエラーになります。
+`GET /api/health` は既存 `events` テーブルを問い合わせ、成功時に `{"status":"ok","database":"connected"}` を返します。
 
-ビルドしたWorkerを確認する場合は、別のターミナルで次を実行します。
+制約のあるクラウド検証では、`DISABLE_DEV_INSPECTOR=1` で開発用デバッガーを無効にできます。
+本番ビルドをE2E確認する場合は `PLAYWRIGHT_SERVER_COMMAND="bunx vite preview --port 3000 --host 127.0.0.1"` を指定できます。
+
+ローカルの書き込み先が制限された環境では、作業領域内のディレクトリを `XDG_CONFIG_HOME` と `WRANGLER_LOG_PATH` に指定できます。APIキーは不要です。
+
+## このブランチでの検証記録
+
+- 25件のドメイン/永続化テスト、5件のDOM操作テストを通過。
+- Biome、TypeScript、本番ビルド、ローカルWorkerのSSR/会場表示/D1疎通を確認。
+- ビルドはViteのCSSソースマップ警告を出しますが成功します。
+- 実ブラウザのPlaywright E2Eは検証環境のChromiumソケット制約で起動できず、未完了です。標準クラウドブラウザからも隔離されたlocalhostに到達できませんでした。
+- そのため画面の見た目・実機レスポンシブ・ネイティブ画面共有は未検証です。E2Eの6シナリオを同梱しています。DOMテストは画面描画の検証を代替しません。
+
+## 明日の実装前に決めたいこと
+
+1. Decisions API と GPT-LIVE の正式な意味・提供元・API仕様・利用権限。
+2. 参加条件・未成年の扱い・確認の担当者・必要な同意と保存期間。
+3. 参加者/スタッフ/投影端末の認証と権限境界。
+4. D1のイベント/参加者/チェックイン/チーム/LTモデルと、競合を防ぐ更新API。
+5. リアルタイム配信方式（Durable Objects/WebSocket等）と画面共有の受信側。
+6. スライド作成・外部資料の取り込み範囲。
+
+## 環境変数・公開
+
+このプロトタイプはAPI用の環境変数なしで動作します。`.dev.vars.example` は未接続の連携を示すコメントだけで、秘密情報や有効なAPI設定は含みません。
+
+**このブランチから外部への公開・本番反映は行っていません。** 既存の `wrangler.jsonc` のD1 IDはローカル用の仮値です。リモートのWorker/D1作成、認証設定、本番の業務データAPIは別途実装・確認が必要です。
+
+既存のスキーマ生成/ローカルマイグレーション操作:
 
 ```sh
-bun run preview --port 4173
-bun run test:smoke http://localhost:4173
-```
-
-`bun run format` で整形します。D1バインディングを変更した場合は `bun run cf-typegen` で型を再生成してください。
-
-## Cloudflareに公開する
-
-リモートのD1とWorkerは未作成です。`wrangler.jsonc` の `database_id` はローカル開発用の仮値です。
-
-公開する場合はCloudflareにログインし、D1を作成します。
-
-```sh
-bunx wrangler login
-bunx wrangler d1 create event-management-service
-```
-
-出力されたデータベースIDで `wrangler.jsonc` の `d1_databases[0].database_id` を置き換えてください。`binding` は `DB`、`migrations_dir` は `drizzle` を維持します。
-
-```sh
+bun run db:generate
+bun run db:migrate
 bun run cf-typegen
-bun run db:migrate:remote
-bun run deploy
 ```
 
-`db:migrate:remote` と `deploy` はCloudflare上のリソースを変更します。
-
-[CloudflareのTanStack Startガイド](https://developers.cloudflare.com/workers/framework-guides/web-apps/tanstack-start/)と[DrizzleのD1ガイド](https://orm.drizzle.team/docs/get-started/d1-new)を参照できます。
+参考: [Cloudflare TanStack Start](https://developers.cloudflare.com/workers/framework-guides/web-apps/tanstack-start/), [Drizzle D1](https://orm.drizzle.team/docs/get-started/d1-new), [MDN getDisplayMedia](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getDisplayMedia)
