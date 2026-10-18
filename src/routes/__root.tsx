@@ -30,10 +30,6 @@ export const Route = createRootRoute({
 			},
 			{
 				rel: "stylesheet",
-				href: "https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,500,1,0&icon_names=add,arrow_forward,delete,edit,error,keyboard_arrow_down,keyboard_arrow_up,pause,play_arrow,stop,wifi_off&display=block",
-			},
-			{
-				rel: "stylesheet",
 				href: appCss,
 			},
 		],

@@ -1,3 +1,18 @@
+import {
+	ArrowRight,
+	ChevronDown,
+	ChevronUp,
+	CircleAlert,
+	type LucideIcon,
+	Monitor,
+	Pause,
+	Pencil,
+	Play,
+	Plus,
+	Square,
+	Trash2,
+	WifiOff,
+} from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	elapsedSeconds,
@@ -143,12 +158,8 @@ function timer(talk: Talk, now: number) {
 	};
 }
 
-function Icon({ name }: { name: string }) {
-	return (
-		<span className="mi" aria-hidden="true">
-			{name}
-		</span>
-	);
+function Icon({ icon: Glyph, size = 22 }: { icon: LucideIcon; size?: number }) {
+	return <Glyph size={size} aria-hidden="true" />;
 }
 
 function Status({ talk, now }: { talk: Talk; now: number }) {
@@ -196,7 +207,7 @@ function Connection({
 	if (connected) return null;
 	return (
 		<output className="notice connection">
-			<Icon name="wifi_off" />
+			<Icon icon={WifiOff} />
 			<span>
 				{hasData ? "再接続中… 最後に取得した情報を表示しています" : "接続中…"}
 			</span>
@@ -256,26 +267,6 @@ type ViewProps = ReturnType<typeof useLive> & {
 	position: string;
 };
 
-function SiteHeader({
-	name,
-	page,
-	children,
-}: {
-	name?: string;
-	page: string;
-	children?: React.ReactNode;
-}) {
-	return (
-		<header className="site-header">
-			<div className="brand">
-				{name ?? "LTライブ"}
-				<small>{page}</small>
-			</div>
-			{children}
-		</header>
-	);
-}
-
 function AudienceView({
 	data,
 	connected,
@@ -285,10 +276,9 @@ function AudienceView({
 	position,
 }: ViewProps) {
 	return (
-		<div className="app">
-			<SiteHeader name={data?.event?.name} page="LTライブ" />
+		<>
 			<Connection connected={connected} hasData={Boolean(data)} />
-			<div className="page live-layout">
+			<div className="live-layout">
 				<section aria-label="現在の発表">
 					{current ? (
 						<>
@@ -345,24 +335,19 @@ function AudienceView({
 					</section>
 				)}
 			</div>
-		</div>
+		</>
 	);
 }
 
 function SpeakerView({ data, connected, now, current, next }: ViewProps) {
 	return (
-		<div className="app">
-			<SiteHeader name={data?.event?.name} page="発表者" />
+		<>
+			<div className="wc-page-heading">
+				<h1>発表者の手元</h1>
+				<p>持ち時間と進行状況を確認できます。タイマーは運営が操作します。</p>
+			</div>
 			<Connection connected={connected} hasData={Boolean(data)} />
-			<div className="page">
-				<div className="page-heading">
-					<div>
-						<h1>発表者の手元</h1>
-						<p className="muted">
-							持ち時間と進行状況を確認できます。タイマーは運営が操作します。
-						</p>
-					</div>
-				</div>
+			<div>
 				{current ? (
 					<section className="confidence" aria-label="現在の発表">
 						<Status talk={current} now={now} />
@@ -387,7 +372,7 @@ function SpeakerView({ data, connected, now, current, next }: ViewProps) {
 					</p>
 				)}
 			</div>
-		</div>
+		</>
 	);
 }
 
@@ -465,21 +450,20 @@ function AdminView({
 
 	if (authorized !== true)
 		return (
-			<div className="app">
-				<SiteHeader page="LT進行" />
-				<div className="page gate">
-					{authorized === null ? (
-						<p className="muted">確認中…</p>
-					) : (
-						<>
+			<div className="gate">
+				{authorized === null ? (
+					<p className="muted">確認中…</p>
+				) : (
+					<>
+						<div className="wc-page-heading">
 							<h1>運営用リンクから開いてください</h1>
-							<p className="muted">
+							<p>
 								このページは運営者専用です。運営チームで共有している運営用リンクを開くと、そのまま操作できます。
 							</p>
-							<a href="/live">参加者向けの画面へ</a>
-						</>
-					)}
-				</div>
+						</div>
+						<a href="/live">参加者向けの画面へ</a>
+					</>
+				)}
 			</div>
 		);
 
@@ -498,30 +482,32 @@ function AdminView({
 	const live = current?.status === "running" || current?.status === "paused";
 
 	return (
-		<div className="app operator">
-			<SiteHeader name={data?.event?.name} page="LT進行">
-				<nav className="header-links" aria-label="表示画面を開く">
-					<a href="/live" target="_blank" rel="noreferrer">
-						参加者画面
-					</a>
-					<a href="/speaker" target="_blank" rel="noreferrer">
-						発表者画面
-					</a>
-					<a href="/screen" target="_blank" rel="noreferrer">
-						会場スクリーン
-					</a>
-				</nav>
-			</SiteHeader>
+		<>
+			<div className="wc-page-heading op-heading">
+				<div>
+					<h1>LT進行</h1>
+					{data?.event && <p>{data.event.name}</p>}
+				</div>
+				<a
+					className="wc-button wc-secondary"
+					href="/screen"
+					target="_blank"
+					rel="noreferrer"
+				>
+					<Icon icon={Monitor} size={18} />
+					会場スクリーンを開く
+				</a>
+			</div>
 			<Connection connected={connected} hasData={Boolean(data)} />
 			{error && (
 				<p className="notice error" role="alert">
-					<Icon name="error" />
+					<Icon icon={CircleAlert} />
 					<span>{error}</span>
 				</p>
 			)}
 			{data && !data.event && (
-				<div className="page gate">
-					<h1>イベントを作成</h1>
+				<div className="gate">
+					<h2>イベントを作成</h2>
 					<form
 						className="stack"
 						onSubmit={(event) => {
@@ -543,7 +529,7 @@ function AdminView({
 				</div>
 			)}
 			{data?.event && (
-				<div className="page operator-grid">
+				<div className="operator-grid">
 					<aside aria-label="発表一覧">
 						<h3>発表一覧</h3>
 						<ol className="op-list">
@@ -596,13 +582,13 @@ function AdminView({
 										<span className="op-tools">
 											<IconButton
 												label={`「${talk.title}」を上へ`}
-												icon="keyboard_arrow_up"
+												icon={ChevronUp}
 												disabled={disabled || index === 0}
 												onClick={() => act("move", talk, { direction: "up" })}
 											/>
 											<IconButton
 												label={`「${talk.title}」を下へ`}
-												icon="keyboard_arrow_down"
+												icon={ChevronDown}
 												disabled={disabled || index === data.talks.length - 1}
 												onClick={() => act("move", talk, { direction: "down" })}
 											/>
@@ -610,13 +596,13 @@ function AdminView({
 												<>
 													<IconButton
 														label={`「${talk.title}」を編集`}
-														icon="edit"
+														icon={Pencil}
 														disabled={disabled}
 														onClick={() => setEditing(talk.id)}
 													/>
 													<IconButton
 														label={`「${talk.title}」を削除`}
-														icon="delete"
+														icon={Trash2}
 														disabled={disabled}
 														onClick={() => {
 															if (confirm(`「${talk.title}」を削除しますか？`))
@@ -636,7 +622,7 @@ function AdminView({
 							onToggle={(event) => setAdding(event.currentTarget.open)}
 						>
 							<summary>
-								<Icon name="add" />
+								<Icon icon={Plus} />
 								発表を追加
 							</summary>
 							<TalkForm
@@ -688,11 +674,7 @@ function AdminView({
 											)
 										}
 									>
-										<Icon
-											name={
-												current.status === "paused" ? "play_arrow" : "pause"
-											}
-										/>
+										<Icon icon={current.status === "paused" ? Play : Pause} />
 										{current.status === "paused" ? "再開" : "一時停止"}
 									</button>
 									<button
@@ -701,7 +683,7 @@ function AdminView({
 										disabled={disabled || !live}
 										onClick={() => act("end", current)}
 									>
-										<Icon name="stop" />
+										<Icon icon={Square} size={18} />
 										発表を終了
 									</button>
 								</div>
@@ -718,7 +700,7 @@ function AdminView({
 												disabled={disabled}
 												onClick={() => act("start", current)}
 											>
-												<Icon name="play_arrow" />
+												<Icon icon={Play} />
 												タイマー開始
 											</button>
 										</>
@@ -736,7 +718,7 @@ function AdminView({
 												disabled={disabled || !next}
 												onClick={() => act("next", current)}
 											>
-												<Icon name="arrow_forward" />
+												<Icon icon={ArrowRight} />
 												次の発表へ
 											</button>
 											<button
@@ -788,7 +770,7 @@ function AdminView({
 					</aside>
 				</div>
 			)}
-		</div>
+		</>
 	);
 }
 
@@ -798,7 +780,7 @@ function IconButton({
 	...props
 }: {
 	label: string;
-	icon: string;
+	icon: LucideIcon;
 	disabled: boolean;
 	onClick: () => void;
 }) {
@@ -810,7 +792,7 @@ function IconButton({
 			title={label}
 			{...props}
 		>
-			<Icon name={icon} />
+			<Icon icon={icon} size={18} />
 		</button>
 	);
 }
