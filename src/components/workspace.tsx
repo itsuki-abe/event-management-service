@@ -9,7 +9,6 @@ import {
 	QrCode,
 	Settings2,
 	UserRound,
-	Users,
 } from "lucide-react";
 
 export type WorkspaceSection =
@@ -22,11 +21,10 @@ export type WorkspaceSection =
 	| "admin"
 	| "guide-admin"
 	| "comments"
-	| "engagement"
+	| "screen"
 	| "qr"
 	| "guide"
-	| "participants"
-	| "team";
+	| "participants";
 
 export function WorkspaceShell({
 	children,
@@ -34,7 +32,6 @@ export function WorkspaceShell({
 	eventId = 1,
 	name,
 	identity,
-	bare = false,
 	registrationOnly = false,
 }: {
 	children: React.ReactNode;
@@ -42,14 +39,12 @@ export function WorkspaceShell({
 	eventId?: string | number;
 	name?: string;
 	identity?: string;
-	bare?: boolean;
 	registrationOnly?: boolean;
 }) {
-	if (bare) return children;
 	const eventPath = `/events/${encodeURIComponent(eventId)}`;
 	const active = ["registration", "connect", "qr"].includes(section)
 		? "dashboard"
-		: section === "engagement"
+		: section === "screen"
 			? "live"
 			: section;
 	const navigation = [
@@ -58,10 +53,9 @@ export function WorkspaceShell({
 		{
 			id: "live",
 			label: "LTライブ",
-			href: `/engagement?eventId=${encodeURIComponent(eventId)}`,
+			href: "/screen",
 			icon: MessageCircle,
 		},
-		{ id: "team", label: "チーム", href: `${eventPath}/team`, icon: Users },
 		{
 			id: "participants",
 			label: "参加者",
@@ -182,22 +176,6 @@ export function WorkspaceShell({
 							{itemsForManagement()}
 						</nav>
 					</section>
-				)}
-				{["live", "engagement"].includes(section) && (
-					<nav className="wc-section-tabs" aria-label="LTライブの表示">
-						<a
-							href="/live"
-							aria-current={section === "live" ? "page" : undefined}
-						>
-							発表・タイマー
-						</a>
-						<a
-							href={`/engagement?eventId=${encodeURIComponent(eventId)}`}
-							aria-current={section === "engagement" ? "page" : undefined}
-						>
-							リアクション・コメント
-						</a>
-					</nav>
 				)}
 				{children}
 				{!registrationOnly && (

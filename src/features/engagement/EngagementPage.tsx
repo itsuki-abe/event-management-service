@@ -1,7 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+	type ReactNode,
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
 import { OrganizerAccess } from "../../components/organizer-access";
 import { SpeakerAvatar } from "../../components/speaker-avatar";
 import { WorkspaceShell } from "../../components/workspace";
+import { type Participation, participationApi } from "../../lib/participation";
 import {
 	type EngagementSnapshot,
 	type ReactionKind,
@@ -75,9 +82,11 @@ function useSnapshot(
 export function EngagementPage({
 	eventId,
 	admin = false,
+	stage,
 }: {
 	eventId: number;
 	admin?: boolean;
+	stage?: ReactNode;
 }) {
 	const [viewTalkId, setViewTalkId] = useState<number | null>(null);
 	const [authorized, setAuthorized] = useState<boolean | null>(null);
@@ -102,24 +111,24 @@ export function EngagementPage({
 		admin,
 		!admin || authorized === true,
 	);
-	const [displayName, setDisplayName] = useState("");
+	const [session, setSession] = useState<Participation | null>(null);
+	useEffect(() => {
+		if (admin) return;
+		participationApi<Participation>(String(eventId), "session")
+			.then(setSession)
+			.catch(() => {});
+	}, [admin, eventId]);
+	const registered = Boolean(session?.participant);
 	const [body, setBody] = useState("");
 	const [draftTalk, setDraftTalk] = useState<Talk | null>(null);
 	const [message, setMessage] = useState("");
 	const [commentError, setCommentError] = useState("");
-	const [nameDialogOpen, setNameDialogOpen] = useState(false);
-	const [nameDraft, setNameDraft] = useState("");
 	const [now, setNow] = useState(0);
-	const nameDialog = useRef<HTMLDialogElement>(null);
 	useEffect(() => {
 		setNow(Date.now());
 		const timer = setInterval(() => setNow(Date.now()), 1000);
 		return () => clearInterval(timer);
 	}, []);
-	useEffect(() => {
-		if (nameDialogOpen) nameDialog.current?.showModal();
-		else nameDialog.current?.close();
-	}, [nameDialogOpen]);
 	useEffect(() => {
 		if (!message) return;
 		const timer = setTimeout(() => setMessage(""), 4000);
@@ -162,7 +171,7 @@ export function EngagementPage({
 			}, 1000);
 		}
 	}
-	async function sendComment(name = displayName) {
+	async function sendComment() {
 		if (!target || sending) return;
 		setSending(true);
 		setMessage("");
@@ -171,10 +180,8 @@ export function EngagementPage({
 			await post({
 				action: "comment",
 				talkId: target.id,
-				displayName: name,
 				body,
 			});
-			setDisplayName(name);
 			setBody("");
 			setDraftTalk(null);
 			setMessage("コメントを送りました。");
@@ -292,11 +299,12 @@ export function EngagementPage({
 	);
 	return (
 		<WorkspaceShell
-			section={admin ? "comments" : "engagement"}
+			section={admin ? "comments" : "screen"}
 			eventId={eventId}
 			name={data?.event.title}
+			identity={session?.participant?.nickname}
 		>
-			<div className={`commons-app ${admin ? "operator" : ""}`}>
+			<div className={`commons-app ${admin ? "operator" : "screen-view"}`}>
 				<div className="page">
 					{admin && authorized !== true ? (
 						<OrganizerAccess authorized={authorized} />
@@ -360,7 +368,8 @@ export function EngagementPage({
 										</label>
 									)}
 									<div className="live-layout">
-										<section className="live-details">
+										{stage}
+										<section className="live-details" aria-label="現在の発表">
 											{talk ? (
 												<>
 													<div className="live-title">
@@ -410,7 +419,7 @@ export function EngagementPage({
 																className={`reaction ${kind} ${lastReaction === kind ? "popped" : ""}`}
 																type="button"
 																key={kind}
-																disabled={admin || reacting}
+																disabled={admin || reacting || !registered}
 																onClick={() => void sendReaction(kind)}
 																aria-label={`${reactionLabels[kind].label}を送る ${data.reactions[kind]}件`}
 															>
@@ -490,14 +499,20 @@ export function EngagementPage({
 												</div>
 											)}
 											{comments}
-											{!admin && target && (
+											{!admin && session && !registered && (
+												<a
+													className="wc-button wc-primary wc-full"
+													href={`/events/${eventId}`}
+												>
+													参加登録して反応・コメントする
+												</a>
+											)}
+											{!admin && target && registered && (
 												<form
 													className="composer"
 													onSubmit={(event) => {
 														event.preventDefault();
-														if (!displayName.trim()) {
-															setNameDialogOpen(true);
-														} else void sendComment();
+														void sendComment();
 													}}
 												>
 													{changed && (
@@ -544,21 +559,7 @@ export function EngagementPage({
 													/>
 													<div className="composer-foot">
 														<small id="composer-help">
-															{displayName ? (
-																<button
-																	type="button"
-																	className="text-button"
-																	onClick={() => {
-																		setNameDraft(displayName);
-																		setNameDialogOpen(true);
-																	}}
-																>
-																	{displayName}として投稿
-																	<Icon name="edit" />
-																</button>
-															) : (
-																"初回の投稿時に表示名を入力"
-															)}
+															{session?.participant?.nickname}として投稿
 														</small>
 														<small id="character-count">
 															{Array.from(body).length} / 200
@@ -612,56 +613,6 @@ export function EngagementPage({
 						{message}
 					</output>
 				)}
-				<dialog
-					ref={nameDialog}
-					className="name-sheet"
-					onCancel={() => setNameDialogOpen(false)}
-					onClose={() => setNameDialogOpen(false)}
-					aria-labelledby="name-title"
-				>
-					<form
-						onSubmit={(event) => {
-							event.preventDefault();
-							if (!nameDraft.trim()) return;
-							setDisplayName(nameDraft.trim());
-							setNameDialogOpen(false);
-							if (body.trim() && data?.commentsEnabled)
-								void sendComment(nameDraft.trim());
-						}}
-					>
-						<h2 id="name-title">コメントする名前</h2>
-						<p className="muted">
-							閲覧とリアクションは
-							<br />
-							名前なしで使えます。
-						</p>
-						<label htmlFor="display-name">表示名</label>
-						<input
-							id="display-name"
-							value={nameDraft}
-							onChange={(event) =>
-								setNameDraft(
-									Array.from(event.target.value).slice(0, 40).join(""),
-								)
-							}
-							placeholder="例：山田"
-							required
-							autoComplete="nickname"
-						/>
-						<p className="subtle-tip">コメントと一緒に表示されます。</p>
-						<button type="submit" className="primary full">
-							{body.trim() ? "この名前で送信" : "この名前を使う"}
-							<Icon name="arrow_forward" />
-						</button>
-						<button
-							type="button"
-							className="secondary full"
-							onClick={() => setNameDialogOpen(false)}
-						>
-							戻る
-						</button>
-					</form>
-				</dialog>
 			</div>
 		</WorkspaceShell>
 	);

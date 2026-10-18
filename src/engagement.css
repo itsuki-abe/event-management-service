@@ -491,35 +491,6 @@
 	max-width: 85%;
 	text-align: center;
 }
-.commons-app .name-sheet {
-	margin: auto;
-	border: 0;
-	background: var(--paper);
-	border-radius: 15px;
-	width: 450px;
-	max-width: calc(100% - 32px);
-	padding: 29px;
-	color: var(--ink);
-}
-.commons-app .name-sheet::backdrop {
-	background: #202a3460;
-}
-.commons-app .name-sheet h2 {
-	font-size: 23px;
-	margin-bottom: 12px;
-}
-.commons-app .name-sheet label {
-	margin-top: 24px;
-}
-.commons-app .name-sheet .subtle-tip {
-	margin-top: 10px;
-}
-.commons-app .name-sheet .primary {
-	margin-top: 20px;
-}
-.commons-app .name-sheet .secondary {
-	margin-top: 10px;
-}
 @media (max-width: 760px) {
 	.commons-app .page {
 		padding: 23px 20px calc(100px + env(safe-area-inset-bottom));
@@ -575,14 +546,6 @@
 	.commons-app .toast {
 		bottom: calc(86px + env(safe-area-inset-bottom));
 	}
-	.commons-app .name-sheet {
-		margin: auto 0 0;
-		width: 100%;
-		max-width: 100%;
-		border-radius: 15px 15px 0 0;
-		padding: 25px 22px calc(25px + env(safe-area-inset-bottom));
-		max-height: 85dvh;
-	}
 
 	.commons-app .connection {
 		margin-top: 16px;
@@ -600,4 +563,81 @@
 		padding: 16px;
 		gap: 12px;
 	}
+}
+
+/* Keep the shared screen in view while participants react or write. */
+.screen-view .live-layout {
+	row-gap: 0;
+}
+.screen-view .live-details {
+	min-width: 0;
+	grid-column: 1;
+	grid-row: 2;
+}
+.screen-view .conversation {
+	grid-column: 2;
+	grid-row: 1 / 3;
+}
+.screen-stage {
+	position: sticky;
+	top: 20px;
+	z-index: 5;
+	align-self: start;
+	aspect-ratio: 16 / 9;
+	background: #202a34;
+	color: white;
+	border-radius: 12px;
+	overflow: hidden;
+	display: grid;
+	place-items: center;
+}
+.screen-stage .share-video {
+	width: 100%;
+	height: 100%;
+	min-height: 0;
+	object-fit: contain;
+}
+.screen-placeholder {
+	display: grid;
+	justify-items: center;
+	gap: 10px;
+	padding: 20px;
+	text-align: center;
+	font-size: 14px;
+}
+.screen-placeholder p {
+	font-size: 12px;
+}
+.screen-view .reaction {
+	min-height: 72px;
+	padding: 12px;
+}
+.screen-view .time-panel {
+	padding: 8px 0 16px;
+}
+.screen-view .time-panel .timer {
+	font-size: 40px;
+}
+@media (max-width: 760px) {
+	.screen-view .live-details {
+		display: contents;
+	}
+	.screen-stage {
+		position: sticky;
+		top: 0;
+		z-index: 5;
+		margin-bottom: 16px;
+	}
+	.screen-placeholder {
+		gap: 5px;
+		padding: 12px;
+	}
+	.screen-placeholder svg {
+		width: 28px;
+		height: 28px;
+	}
+}
+
+.wc-app:has(.screen-view) .wc-header {
+	position: static;
 }

@@ -11,11 +11,10 @@ import {
 	RefreshCw,
 	ShieldCheck,
 	Toilet,
-	Users,
 	Wifi,
 } from "lucide-react";
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
-import { type Participation, participationApi } from "../lib/participation";
+import { participationApi } from "../lib/participation";
 import { decodeWifi, type Guide, guideCategories } from "../lib/venue";
 import { WorkspaceShell } from "./workspace";
 
@@ -162,7 +161,7 @@ function GuideContent({ guide }: { guide: Guide }) {
 	);
 }
 
-function WifiCard({ guide }: { guide: Guide }) {
+export function WifiCard({ guide }: { guide: Guide }) {
 	const wifi = decodeWifi(guide.content);
 	if (!wifi) return null;
 	return (
@@ -472,74 +471,6 @@ export function VenuePage({ eventId }: { eventId: string }) {
 						運営が公開した案内を自動で更新します
 					</p>
 				)}
-			</div>
-		</WorkspaceShell>
-	);
-}
-
-export function TeamPage({ eventId }: { eventId: string }) {
-	const [data, setData] = useState<Participation | null>(null);
-	const [error, setError] = useState("");
-	useEffect(() => {
-		participationApi<Participation>(eventId, "session")
-			.then(setData)
-			.catch((error) => setError(error.message));
-	}, [eventId]);
-	return (
-		<WorkspaceShell
-			section="team"
-			name={data?.event.name}
-			eventId={eventId}
-			identity={data?.participant?.nickname}
-		>
-			<div className="wc-team-layout">
-				<section className="wc-team-intro">
-					<span className="wc-eyebrow">WORKSHOP</span>
-					<h1>
-						チームで、
-						<br />
-						アイデアを形に。
-					</h1>
-					<img
-						className="wc-hero-image"
-						src="/assets/commons/collaboration.png"
-						alt="4人がテーブルを囲み共同制作しているイラスト"
-					/>
-					<p>
-						少人数で話すと、もっとおもしろい。
-						<br />
-						一緒につくる仲間と、テーブルで会いましょう。
-					</p>
-				</section>
-				<section className="wc-empty-panel">
-					<Users size={42} aria-hidden="true" />
-					<h2>
-						チームの案内を
-						<br />
-						お待ちください
-					</h2>
-					{error ? (
-						<p role="alert">{error}</p>
-					) : (
-						<p>
-							{data?.participant && (
-								<strong>
-									{data.participant.nickname}さん
-									<br />
-								</strong>
-							)}
-							所属チーム・集合場所は、
-							<br />
-							運営からの案内をご確認ください。
-						</p>
-					)}
-					<a
-						className="wc-button wc-secondary wc-full"
-						href={data?.participant ? "/live" : `/events/${eventId}`}
-					>
-						{data?.participant ? "ライブを見る" : "先に参加登録する"}
-					</a>
-				</section>
 			</div>
 		</WorkspaceShell>
 	);

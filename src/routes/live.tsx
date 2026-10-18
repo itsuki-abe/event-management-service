@@ -1,3 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { LtPage } from "../components/lt";
-export const Route = createFileRoute("/live")({ component: LtPage });
+import { createFileRoute, redirect } from "@tanstack/react-router";
+// Short URL for the participant LT live page.
+export const Route = createFileRoute("/live")({
+	beforeLoad: () => {
+		throw redirect({ to: "/screen" });
+	},
+});

@@ -399,7 +399,7 @@ try {
 		["プロフィールを開く", `/events/${eventId}`],
 		["会場案内を開く", `/events/${eventId}/guide`],
 		["参加者一覧を開く", `/events/${eventId}/participants`],
-		["LTライブを開く", `/engagement?eventId=${eventId}`],
+		["LTライブを開く", "/screen"],
 	])
 		await expect(
 			viewer.getByRole("link", { name: label, exact: true }),

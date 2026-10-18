@@ -49,10 +49,10 @@ export function participantSteps(eventId: number): GuideStep[] {
 			steps: [
 				"「LTライブを開く」を押し、表示されている発表を確認します。",
 				"気持ちに合うリアクションボタンを押します。コメントは入力欄から送信できます。",
-				"初めてコメントするときは、表示名を入力します。発表が切り替わったら、送信先を確認してください。",
+				"コメントは参加登録した表示名で投稿されます。発表が切り替わったら、送信先を確認してください。",
 			],
 			result: "送った反応やコメントが、その発表の画面に反映されます。",
-			link: { href: `/engagement?eventId=${eventId}`, label: "LTライブを開く" },
+			link: { href: "/screen", label: "LTライブを開く" },
 			note: "発表がまだ選ばれていない場合は開始をお待ちください。コメント受付を停止している時間もあります。",
 		},
 		{
@@ -201,7 +201,7 @@ export function organizerSteps(eventId: number | null): GuideStep[] {
 							href: `/admin/comments?eventId=${eventId}`,
 							label: "コメント管理を開く",
 						},
-						note: "「会場投影を許可」は設定の保存までです。コメントを会場スクリーンに表示する機能はまだありません。",
+						note: "LTライブでは共有画面とコメント一覧を同じページに表示します。「会場投影を許可」をオフにしても、LTライブのコメント一覧は非表示になりません。会場に投影する前に表示内容を確認してください。",
 					},
 				]
 			: []),

@@ -13,7 +13,7 @@ import "../guide-admin.css";
 type Draft = Pick<Guide, "category" | "title" | "content" | "isVisible">;
 type GuideData = { event: { id: number; name: string }; guides: Guide[] };
 
-function draftsFrom(guides: Guide[]): Draft[] {
+export function draftsFrom(guides: Guide[]): Draft[] {
 	return guideCategories.map(({ category, title }) => {
 		const existing = guides.find((guide) => guide.category === category);
 		return {
