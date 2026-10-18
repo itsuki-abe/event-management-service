@@ -504,9 +504,19 @@ export function ParticipationPage({
 					</h1>
 					<p className="lead">
 						{desktop
-							? "このPCも、同じ参加者として利用できます。"
+							? "このPCも、同じ参加者として利用できます。登壇する方は、発表者画面から画面共有を準備できます。"
 							: "参加登録が完了しました。LTに反応したり、会場案内を確認したりできます。"}
 					</p>
+					{desktop && (
+						<div className="button-row">
+							<a className="button" href="/speaker">
+								発表者画面を開く
+							</a>
+							<a className="button secondary" href="/">
+								ホームへ
+							</a>
+						</div>
+					)}
 					{!desktop && (
 						<div className="button-row">
 							<a className="button" href="/screen">
@@ -740,7 +750,7 @@ export function VenueQrPage({ eventId }: { eventId: string }) {
 							/>
 						</div>
 						<p className="poster-url">{url}</p>
-						<p className="muted">名前を登録 → 自分のPC／Macと接続</p>
+						<p className="muted">名前を登録するだけで参加できます</p>
 						<div className="button-row no-print">
 							<a className="button" href={url}>
 								参加ページを開く
