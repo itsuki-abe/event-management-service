@@ -1,4 +1,3 @@
-import { env } from "cloudflare:workers";
 import { and, asc, count, desc, eq, isNull, sql } from "drizzle-orm";
 import { db } from "../../db";
 import {
@@ -10,6 +9,7 @@ import {
 	talkComments,
 	talks,
 } from "../../db/schema";
+import { isOrganizer } from "../../server/organizer";
 import { type EngagementSnapshot, reactionKinds } from "./types";
 
 class ApiError extends Error {
@@ -40,11 +40,8 @@ async function hash(token: string) {
 	).join("");
 }
 async function requireOrganizer(request: Request) {
-	const secret = (env as typeof env & { ENGAGEMENT_ADMIN_TOKEN?: string })
-		.ENGAGEMENT_ADMIN_TOKEN;
-	const token = request.headers.get("Authorization")?.replace(/^Bearer /, "");
-	if (!secret || !token || (await hash(token)) !== (await hash(secret)))
-		throw new ApiError(403, "運営用の認証が必要です。");
+	if (!isOrganizer(request))
+		throw new ApiError(403, "運営用リンクから開いてください。");
 }
 async function participant(
 	request: Request,

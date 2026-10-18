@@ -39,6 +39,7 @@ export function EventShell({
 			eventId={eventId}
 			name={name}
 			identity={identity}
+			registrationOnly={section === "registration" && !identity}
 		>
 			<div className={`participation ${identity ? "is-registered" : ""}`}>
 				<div className="event-content">

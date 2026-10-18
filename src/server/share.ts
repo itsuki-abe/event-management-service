@@ -1,6 +1,7 @@
 import { env } from "cloudflare:workers";
 import { shareActionSchema } from "../lib/lt";
-import { isOrganizer, SHARE_TIMEOUT_SECONDS } from "./lt";
+import { SHARE_TIMEOUT_SECONDS } from "./lt";
+import { isOrganizer } from "./organizer";
 import { ensureSession, readSession } from "./participation";
 
 // WebRTC signaling for presenter screen shares. A viewer (projector or the

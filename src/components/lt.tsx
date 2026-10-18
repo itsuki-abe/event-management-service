@@ -7,8 +7,6 @@ import {
 	Hand,
 	Lightbulb,
 	type LucideIcon,
-	MessageSquare,
-	Monitor,
 	MonitorUp,
 	Pause,
 	Pencil,
@@ -34,6 +32,7 @@ import {
 	type LiveSnapshot,
 	liveSnapshotSchema,
 } from "../lib/lt";
+import { OrganizerAccess } from "./organizer-access";
 import { ShareVideo, useSharePublisher, useShareViewer } from "./share";
 import { SpeakerAvatar } from "./speaker-avatar";
 import { WorkspaceShell } from "./workspace";
@@ -310,13 +309,6 @@ function AudienceView({
 							<div className="time-panel">
 								<Timer talk={current} now={now} />
 							</div>
-							<a
-								className="wc-button wc-primary"
-								href={`/engagement?eventId=${data?.event?.id ?? 1}`}
-							>
-								<Icon icon={MessageSquare} size={18} />
-								リアクション・コメント
-							</a>
 						</>
 					) : (
 						<p className="muted">
@@ -667,24 +659,7 @@ function AdminView({
 		);
 	}, [run]);
 
-	if (authorized !== true)
-		return (
-			<div className="gate">
-				{authorized === null ? (
-					<p className="muted">確認中…</p>
-				) : (
-					<>
-						<div className="wc-page-heading">
-							<h1>運営用リンクから開いてください</h1>
-							<p>
-								このページは運営者専用です。運営チームで共有している運営用リンクを開くと、そのまま操作できます。
-							</p>
-						</div>
-						<a href="/live">参加者向けの画面へ</a>
-					</>
-				)}
-			</div>
-		);
+	if (authorized !== true) return <OrganizerAccess authorized={authorized} />;
 
 	const active = data?.talks.find(
 		(talk) => talk.status === "running" || talk.status === "paused",
@@ -702,27 +677,18 @@ function AdminView({
 
 	return (
 		<>
-			<div className="wc-page-heading op-heading">
-				<div>
-					<h1>LT進行</h1>
-					{data?.event && <p>{data.event.name}</p>}
-				</div>
-				<a
-					className="wc-button wc-secondary"
-					href="/screen"
-					target="_blank"
-					rel="noreferrer"
-				>
-					<Icon icon={Monitor} size={18} />
-					会場スクリーンを開く
-				</a>
-				<a
-					className="wc-button wc-secondary"
-					href={`/admin/comments?eventId=${data?.event?.id ?? 1}`}
-				>
-					<Icon icon={MessageSquare} size={18} />
-					コメント管理
-				</a>
+			<div className="wc-admin-actions">
+				<nav className="header-links" aria-label="表示画面を開く">
+					<a href="/live" target="_blank" rel="noreferrer">
+						参加者画面
+					</a>
+					<a href="/speaker" target="_blank" rel="noreferrer">
+						発表者画面
+					</a>
+					<a href="/screen" target="_blank" rel="noreferrer">
+						会場スクリーン
+					</a>
+				</nav>
 			</div>
 			<Connection connected={connected} hasData={Boolean(data)} />
 			{error && (

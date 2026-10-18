@@ -218,13 +218,6 @@
 		font-weight: 700;
 	}
 
-	.op-heading {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: flex-end;
-		justify-content: space-between;
-		gap: 16px;
-	}
 	.gate {
 		max-width: 520px;
 		display: grid;

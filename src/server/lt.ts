@@ -6,6 +6,11 @@ import {
 	liveActionSchema,
 	liveSnapshotSchema,
 } from "../lib/lt";
+import {
+	organizerCookieName as cookieName,
+	isOrganizer,
+	organizerKey,
+} from "./organizer";
 
 class LiveError extends Error {
 	constructor(
@@ -367,17 +372,6 @@ export async function getLive() {
 	}
 }
 
-const cookieName = "lt_organizer";
-
-function organizerKey() {
-	const key = "ORGANIZER_KEY" in env ? env.ORGANIZER_KEY : undefined;
-	return typeof key === "string" &&
-		key &&
-		key !== "replace-with-a-long-random-key"
-		? key
-		: undefined;
-}
-
 export function login(request: Request) {
 	const url = new URL(request.url);
 	const key = organizerKey();
@@ -392,16 +386,6 @@ export function login(request: Request) {
 			}),
 		},
 	});
-}
-
-export function isOrganizer(request: Request) {
-	const key = organizerKey();
-	const cookie = request.headers
-		.get("Cookie")
-		?.split(/;\s*/)
-		.find((item) => item.startsWith(`${cookieName}=`))
-		?.slice(cookieName.length + 1);
-	return Boolean(key && cookie && cookie === encodeURIComponent(key));
 }
 
 export async function postLive(request: Request) {
