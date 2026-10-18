@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
 import { once } from "node:events";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -36,7 +36,7 @@ async function freePort() {
 async function addTalk(page, title, speaker, duration) {
 	const form = page.locator(".add");
 	if (!(await form.evaluate((details) => details.open)))
-		await page.getByText("発表を追加", { exact: true }).click();
+		await form.locator("summary").click();
 	await form.getByLabel("タイトル", { exact: true }).fill(title);
 	await form.getByLabel("発表者", { exact: true }).fill(speaker);
 	await form.getByLabel("持ち時間", { exact: true }).fill(duration);
@@ -146,6 +146,22 @@ try {
 	const gate = admin.getByRole("heading", {
 		name: "運営用リンクから開いてください",
 	});
+	await admin.goto("/");
+	const menu = admin.getByRole("navigation", {
+		name: "メインメニュー",
+		exact: true,
+	});
+	await expect(
+		menu.getByRole("link", { name: "LTライブ", exact: true }),
+	).toBeVisible();
+	await menu.getByRole("link", { name: "コメント管理", exact: true }).click();
+	await expect(gate).toBeVisible();
+	assert.equal(
+		(
+			await viewerContext.request.get("/api/engagement?eventId=1&admin=1")
+		).status(),
+		403,
+	);
 	await admin.goto("/admin");
 	await expect(gate).toBeVisible();
 	await admin.goto("/api/login?key=incorrect-organizer-key");
@@ -158,6 +174,58 @@ try {
 	await admin.getByRole("button", { name: "作成", exact: true }).click();
 	await addTalk(admin, "自動化の第一歩", "発表者A", "5");
 	await addTalk(admin, "1秒の発表", "発表者B", "0:01");
+	await admin
+		.getByRole("navigation", { name: "運営メニュー" })
+		.getByRole("link", { name: "コメント管理" })
+		.click();
+	await expect(
+		admin.getByRole("heading", { name: "運営管理", exact: true }),
+	).toBeVisible();
+	const acceptance = admin.getByRole("switch", {
+		name: "コメント受付",
+	});
+	await expect(acceptance).toBeVisible();
+	await acceptance.click();
+	await expect(acceptance).not.toBeChecked();
+	await admin.reload();
+	await expect(acceptance).not.toBeChecked();
+	await acceptance.click();
+	await expect(acceptance).toBeChecked();
+	for (const width of [390, 900, 1440]) {
+		await admin.setViewportSize({ width, height: 900 });
+		await expect(
+			menu.getByRole("link", { name: "LTライブ", exact: true }),
+		).toBeVisible();
+		await expect(
+			menu.getByRole("link", { name: "コメント管理", exact: true }),
+		).toBeVisible();
+		const managementTab = await menu
+			.getByRole("link", { name: "コメント管理", exact: true })
+			.boundingBox();
+		assert.ok(
+			managementTab &&
+				managementTab.x >= 0 &&
+				managementTab.x + managementTab.width <= width,
+			"The comment management tab must be visible without scrolling.",
+		);
+		assert.ok(
+			await admin.evaluate(
+				() => document.documentElement.scrollWidth <= innerWidth,
+			),
+			`Comments overflow at ${width}px`,
+		);
+		await mkdir(join(root, "output/playwright"), { recursive: true });
+		await admin.screenshot({
+			path: join(root, `output/playwright/comments-${width}.png`),
+			fullPage: true,
+		});
+	}
+	await admin.setViewportSize({ width: 1280, height: 900 });
+	await admin
+		.getByRole("navigation", { name: "運営メニュー" })
+		.getByRole("link", { name: "LT進行" })
+		.click();
+	await expect(admin.getByLabel("イベント名", { exact: true })).toHaveCount(0);
 	await addTalk(admin, "削除する発表", "発表者C", "3:30");
 	await admin
 		.getByRole("button", { name: "「削除する発表」を削除", exact: true })

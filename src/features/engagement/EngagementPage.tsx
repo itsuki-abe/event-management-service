@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { OrganizerAccess } from "../../components/organizer-access";
 import { SpeakerAvatar } from "../../components/speaker-avatar";
+import { WorkspaceShell } from "../../components/workspace";
 import {
 	type EngagementSnapshot,
 	type ReactionKind,
@@ -26,22 +28,19 @@ function useSnapshot(
 	eventId: number,
 	talkId: number | null,
 	admin: boolean,
-	token: string,
+	enabled: boolean,
 ) {
 	const [data, setData] = useState<EngagementSnapshot | null>(null);
 	const [error, setError] = useState("");
 	const sequence = useRef(0);
 	const refresh = useCallback(async () => {
-		if (admin && !token) return;
+		if (!enabled) return;
 		const seq = ++sequence.current;
 		const params = new URLSearchParams({ eventId: String(eventId) });
 		if (talkId) params.set("talkId", String(talkId));
 		if (admin) params.set("admin", "1");
 		try {
-			const result = await api<EngagementSnapshot>(
-				`/api/engagement?${params}`,
-				{ headers: admin ? { Authorization: `Bearer ${token}` } : undefined },
-			);
+			const result = await api<EngagementSnapshot>(`/api/engagement?${params}`);
 			if (sequence.current === seq) {
 				setData(result);
 				setError("");
@@ -52,7 +51,7 @@ function useSnapshot(
 					cause instanceof Error ? cause.message : "通信に失敗しました。",
 				);
 		}
-	}, [eventId, talkId, admin, token]);
+	}, [eventId, talkId, admin, enabled]);
 	useEffect(() => {
 		setData(null);
 		let stopped = false;
@@ -81,13 +80,27 @@ export function EngagementPage({
 	admin?: boolean;
 }) {
 	const [viewTalkId, setViewTalkId] = useState<number | null>(null);
-	const [tokenInput, setTokenInput] = useState("");
-	const [token, setToken] = useState("");
+	const [authorized, setAuthorized] = useState<boolean | null>(null);
+	useEffect(() => {
+		if (!admin) return;
+		const controller = new AbortController();
+		void fetch("/api/lt", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ action: "authorize" }),
+			signal: controller.signal,
+		})
+			.then((response) => setAuthorized(response.ok))
+			.catch(() => {
+				if (!controller.signal.aborted) setAuthorized(false);
+			});
+		return () => controller.abort();
+	}, [admin]);
 	const { data, error, refresh } = useSnapshot(
 		eventId,
 		viewTalkId,
 		admin,
-		token,
+		!admin || authorized === true,
 	);
 	const [displayName, setDisplayName] = useState("");
 	const [body, setBody] = useState("");
@@ -126,7 +139,6 @@ export function EngagementPage({
 			method,
 			headers: {
 				"Content-Type": "application/json",
-				...(admin ? { Authorization: `Bearer ${token}` } : {}),
 			},
 			body: JSON.stringify({ eventId, ...payload }),
 		});
@@ -279,467 +291,379 @@ export function EngagementPage({
 		</>
 	);
 	return (
-		<div className={`commons-app ${admin ? "operator" : ""}`}>
-			<header className="site-header">
-				<div className="brand">
-					WORKSHOP COMMONS<small>つくる、つながる</small>
-				</div>
-				<nav className="header-nav" aria-label="メインメニュー">
-					<a
-						className={!admin ? "active" : ""}
-						aria-current={!admin ? "page" : undefined}
-						href={`/engagement?eventId=${eventId}`}
-					>
-						LTライブ
-					</a>
-					<a
-						className={admin ? "active" : ""}
-						aria-current={admin ? "page" : undefined}
-						href={`/admin/comments?eventId=${eventId}`}
-					>
-						コメント管理
-					</a>
-				</nav>
-				<span className="event-date">
-					{data?.event.title || "イベントへようこそ"}
-				</span>
-			</header>
-			<main className="page">
-				{admin && !token ? (
-					<section className="login-panel">
-						<span className="badge blue">運営画面</span>
-						<h1>コメントを、安心して届ける。</h1>
-						<p className="muted">
-							受付の切り替えやコメントの管理はこちらから。
-						</p>
-						<form
-							onSubmit={(event) => {
-								event.preventDefault();
-								setToken(tokenInput.trim());
-								setTokenInput("");
-							}}
-						>
-							<label htmlFor="admin-token">運営用キー</label>
-							<input
-								id="admin-token"
-								type="password"
-								value={tokenInput}
-								onChange={(event) => setTokenInput(event.target.value)}
-								required
-								autoComplete="off"
-							/>
-							<button type="submit" className="primary full">
-								接続する
-								<Icon name="arrow_forward" />
-							</button>
-						</form>
-					</section>
-				) : (
-					<>
-						{error && (
-							<div className="notice error" role="alert">
-								<Icon name="wifi_off" />
-								<div>
-									<strong>再接続中です</strong>
-									<p>{error}</p>
-									<p>
-										最後に取得した情報を表示しています。自動で再接続します。
-									</p>
-									<button
-										className="text-button"
-										type="button"
-										onClick={() => void refresh()}
-									>
-										再試行
-									</button>
-									{admin && (
+		<WorkspaceShell
+			section={admin ? "comments" : "engagement"}
+			eventId={eventId}
+			name={data?.event.title}
+		>
+			<div className={`commons-app ${admin ? "operator" : ""}`}>
+				<div className="page">
+					{admin && authorized !== true ? (
+						<OrganizerAccess authorized={authorized} />
+					) : (
+						<>
+							{error && (
+								<div className="notice error" role="alert">
+									<Icon name="wifi_off" />
+									<div>
+										<strong>再接続中です</strong>
+										<p>{error}</p>
+										<p>
+											最後に取得した情報を表示しています。自動で再接続します。
+										</p>
 										<button
 											className="text-button"
 											type="button"
-											onClick={() => setToken("")}
+											onClick={() => void refresh()}
 										>
-											運営用キーを入力し直す
+											再試行
 										</button>
-									)}
-								</div>
-							</div>
-						)}
-						{!data && !error && (
-							<p className="loading" role="alert">
-								イベントに接続しています…
-							</p>
-						)}
-						{data && (
-							<>
-								{admin && (
-									<div className="page-heading">
-										<div>
-											<h1>コメント管理</h1>
-											<p className="muted">{data.event.title}</p>
-										</div>
-										<span className="badge blue">運営画面</span>
 									</div>
-								)}
-								{admin && (
-									<label className="talk-select">
-										表示する発表
-										<select
-											value={viewTalkId ?? "live"}
-											onChange={(event) =>
-												setViewTalkId(
-													event.target.value === "live"
-														? null
-														: Number(event.target.value),
-												)
-											}
-										>
-											<option value="live">進行中の発表に合わせる</option>
-											{data.talks.map((item) => (
-												<option key={item.id} value={item.id}>
-													{item.speakerName} / {item.title}
-												</option>
-											))}
-										</select>
-									</label>
-								)}
-								<div className="live-layout">
-									<section className="live-details">
-										{talk ? (
-											<>
-												<div className="live-title">
-													<div className="row between">
-														<span className="eyebrow">
-															LT LIVE ·{" "}
-															{String(
-																data.talks.findIndex(
-																	(item) => item.id === talk.id,
-																) + 1,
-															).padStart(2, "0")}{" "}
-															/ {String(data.talks.length).padStart(2, "0")}
+								</div>
+							)}
+							{!data && !error && (
+								<p className="loading" role="alert">
+									イベントに接続しています…
+								</p>
+							)}
+							{data && (
+								<>
+									{admin && (
+										<div className="page-heading">
+											<div>
+												<h2>コメント管理</h2>
+												<p className="muted">{data.event.title}</p>
+											</div>
+											<span className="badge blue">運営画面</span>
+										</div>
+									)}
+									{admin && (
+										<label className="talk-select">
+											表示する発表
+											<select
+												value={viewTalkId ?? "live"}
+												onChange={(event) =>
+													setViewTalkId(
+														event.target.value === "live"
+															? null
+															: Number(event.target.value),
+													)
+												}
+											>
+												<option value="live">進行中の発表に合わせる</option>
+												{data.talks.map((item) => (
+													<option key={item.id} value={item.id}>
+														{item.speakerName} / {item.title}
+													</option>
+												))}
+											</select>
+										</label>
+									)}
+									<div className="live-layout">
+										<section className="live-details">
+											{talk ? (
+												<>
+													<div className="live-title">
+														<div className="row between">
+															<span className="eyebrow">
+																LT LIVE ·{" "}
+																{String(
+																	data.talks.findIndex(
+																		(item) => item.id === talk.id,
+																	) + 1,
+																).padStart(2, "0")}{" "}
+																/ {String(data.talks.length).padStart(2, "0")}
+															</span>
+															<span
+																className={`badge ${remaining < 0 ? "red" : talk.status === "pending" ? "blue" : "peach"}`}
+															>
+																{remaining < 0 && talk.status === "running"
+																	? "時間超過"
+																	: labels[talk.status]}
+															</span>
+														</div>
+														<h1>{talk.title}</h1>
+														<div className="talk-line">
+															<span className="initial" aria-hidden="true">
+																<SpeakerAvatar name={talk.speakerName} />
+															</span>
+															<strong>{talk.speakerName}</strong>
+														</div>
+													</div>
+													<div className="time-panel">
+														<span className="timer-caption">
+															{remaining < 0
+																? "超過時間"
+																: talk.status === "pending"
+																	? "持ち時間"
+																	: "残り時間"}
 														</span>
 														<span
-															className={`badge ${remaining < 0 ? "red" : talk.status === "pending" ? "blue" : "peach"}`}
+															className={`timer ${remaining < 0 ? "overtime" : ""}`}
 														>
-															{remaining < 0 && talk.status === "running"
-																? "時間超過"
-																: labels[talk.status]}
+															{timerText}
 														</span>
 													</div>
-													<h1>{talk.title}</h1>
-													<div className="talk-line">
-														<span className="initial" aria-hidden="true">
-															<SpeakerAvatar name={talk.speakerName} />
-														</span>
-														<strong>{talk.speakerName}</strong>
-													</div>
-												</div>
-												<div className="time-panel">
-													<span className="timer-caption">
-														{remaining < 0
-															? "超過時間"
-															: talk.status === "pending"
-																? "持ち時間"
-																: "残り時間"}
-													</span>
-													<span
-														className={`timer ${remaining < 0 ? "overtime" : ""}`}
-													>
-														{timerText}
-													</span>
-												</div>
-												<div className="reaction-grid">
-													{reactionKinds.map((kind) => (
-														<button
-															className={`reaction ${kind} ${lastReaction === kind ? "popped" : ""}`}
-															type="button"
-															key={kind}
-															disabled={admin || reacting}
-															onClick={() => void sendReaction(kind)}
-															aria-label={`${reactionLabels[kind].label}を送る ${data.reactions[kind]}件`}
-														>
-															<Icon name={reactionLabels[kind].icon} />
-															<span>
-																<strong>{reactionLabels[kind].label}</strong>
-																<small>{data.reactions[kind]}</small>
-															</span>
-														</button>
-													))}
-												</div>
-												<p className="subtle-tip">
-													気持ちが動いたら、何度でも。反応はこの発表に届きます。
-												</p>
-											</>
-										) : (
-											<div className="waiting">
-												<Icon name="chat_bubble" />
-												<h1>もうすぐ、はじまります。</h1>
-												<p className="muted">
-													発表が選択されると、ここから反応やコメントを送れます。
-												</p>
-											</div>
-										)}
-										<output className="connection">
-											<Icon name={error ? "wifi_off" : "wifi"} />
-											{error ? "再接続中" : "接続中"}
-											<span>反応数は送信された回数です</span>
-										</output>
-									</section>
-									<section className="conversation">
-										{admin && (
-											<div className="moderation-settings">
-												<label className="toggle">
-													<input
-														type="checkbox"
-														role="switch"
-														aria-checked={data.commentsEnabled}
-														checked={data.commentsEnabled}
-														disabled={sending}
-														onChange={(event) =>
-															void moderate({
-																action: "settings",
-																commentsEnabled: event.target.checked,
-																commentsProjectionEnabled:
-																	data.commentsProjectionEnabled,
-															})
-														}
-													/>
-													<span>
-														コメント
-														{data.commentsEnabled ? "受付中" : "受付停止中"}
-													</span>
-												</label>
-												<label className="toggle">
-													<input
-														type="checkbox"
-														role="switch"
-														aria-checked={data.commentsProjectionEnabled}
-														checked={data.commentsProjectionEnabled}
-														disabled={sending}
-														onChange={(event) =>
-															void moderate({
-																action: "settings",
-																commentsEnabled: data.commentsEnabled,
-																commentsProjectionEnabled: event.target.checked,
-															})
-														}
-													/>
-													<span>会場投影を許可</span>
-												</label>
-												<p className="subtle-tip">
-													参加者向けの一覧表示と、会場への投影許可は別々に設定します。投影画面との接続は別機能です。
-												</p>
-											</div>
-										)}
-										{comments}
-										{!admin && target && (
-											<form
-												className="composer"
-												onSubmit={(event) => {
-													event.preventDefault();
-													if (!displayName.trim()) {
-														setNameDialogOpen(true);
-													} else void sendComment();
-												}}
-											>
-												{changed && (
-													<div className="notice change-notice" role="alert">
-														<Icon name="swap_horiz" />
-														<span>
-															<strong>発表が切り替わりました</strong>
-															<br />
-															送信先は変更していません。
-														</span>
-													</div>
-												)}
-												{commentError && (
-													<div className="notice error" role="alert">
-														<Icon name="error" />
-														<span>
-															<strong>送信できませんでした</strong>
-															<br />
-															{commentError}
-															<br />
-															入力は残っています。接続後に再送できます。
-														</span>
-													</div>
-												)}
-												<label htmlFor="comment-body">
-													{target.speakerName}さんへの
-													{changed ? "下書き" : "コメント"}
-												</label>
-												<textarea
-													id="comment-body"
-													placeholder="感想や質問を書いてみよう"
-													value={body}
-													disabled={sending}
-													required
-													onChange={(event) => {
-														if (!draftTalk) setDraftTalk(talk ?? null);
-														setBody(
-															Array.from(event.target.value)
-																.slice(0, 200)
-																.join(""),
-														);
-													}}
-													aria-describedby="composer-help character-count"
-												/>
-												<div className="composer-foot">
-													<small id="composer-help">
-														{displayName ? (
+													<div className="reaction-grid">
+														{reactionKinds.map((kind) => (
 															<button
+																className={`reaction ${kind} ${lastReaction === kind ? "popped" : ""}`}
 																type="button"
-																className="text-button"
-																onClick={() => {
-																	setNameDraft(displayName);
-																	setNameDialogOpen(true);
-																}}
+																key={kind}
+																disabled={admin || reacting}
+																onClick={() => void sendReaction(kind)}
+																aria-label={`${reactionLabels[kind].label}を送る ${data.reactions[kind]}件`}
 															>
-																{displayName}として投稿
-																<Icon name="edit" />
+																<Icon name={reactionLabels[kind].icon} />
+																<span>
+																	<strong>{reactionLabels[kind].label}</strong>
+																	<small>{data.reactions[kind]}</small>
+																</span>
 															</button>
-														) : (
-															"初回の投稿時に表示名を入力"
-														)}
-													</small>
-													<small id="character-count">
-														{Array.from(body).length} / 200
-													</small>
+														))}
+													</div>
+													<p className="subtle-tip">
+														気持ちが動いたら、何度でも。反応はこの発表に届きます。
+													</p>
+												</>
+											) : (
+												<div className="waiting">
+													<Icon name="chat_bubble" />
+													<h1>もうすぐ、はじまります。</h1>
+													<p className="muted">
+														発表が選択されると、ここから反応やコメントを送れます。
+													</p>
 												</div>
-												<button
-													type="submit"
-													className="primary full"
-													disabled={
-														sending || !data.commentsEnabled || !body.trim()
-													}
+											)}
+											<output className="connection">
+												<Icon name={error ? "wifi_off" : "wifi"} />
+												{error ? "再接続中" : "接続中"}
+												<span>反応数は送信された回数です</span>
+											</output>
+										</section>
+										<section className="conversation">
+											{admin && (
+												<div className="moderation-settings">
+													<label className="toggle">
+														<input
+															type="checkbox"
+															role="switch"
+															aria-label="コメント受付"
+															aria-checked={data.commentsEnabled}
+															checked={data.commentsEnabled}
+															disabled={sending}
+															onChange={(event) =>
+																void moderate({
+																	action: "settings",
+																	commentsEnabled: event.target.checked,
+																	commentsProjectionEnabled:
+																		data.commentsProjectionEnabled,
+																})
+															}
+														/>
+														<span>
+															コメント
+															{data.commentsEnabled ? "受付中" : "受付停止中"}
+														</span>
+													</label>
+													<label className="toggle">
+														<input
+															type="checkbox"
+															role="switch"
+															aria-checked={data.commentsProjectionEnabled}
+															checked={data.commentsProjectionEnabled}
+															disabled={sending}
+															onChange={(event) =>
+																void moderate({
+																	action: "settings",
+																	commentsEnabled: data.commentsEnabled,
+																	commentsProjectionEnabled:
+																		event.target.checked,
+																})
+															}
+														/>
+														<span>会場投影を許可</span>
+													</label>
+													<p className="subtle-tip">
+														参加者向けの一覧表示と、会場への投影許可は別々に設定します。投影画面との接続は別機能です。
+													</p>
+												</div>
+											)}
+											{comments}
+											{!admin && target && (
+												<form
+													className="composer"
+													onSubmit={(event) => {
+														event.preventDefault();
+														if (!displayName.trim()) {
+															setNameDialogOpen(true);
+														} else void sendComment();
+													}}
 												>
-													{sending
-														? "送信中…"
-														: !data.commentsEnabled
-															? "コメントの受付は停止中です"
-															: changed
-																? `${target.speakerName}さんへ送信`
-																: commentError
-																	? "再送信"
-																	: "送信する"}
-													<Icon name="send" />
-												</button>
-												{changed && (
-													<button
-														type="button"
-														className="secondary full"
-														disabled={sending || !talk}
-														onClick={() => {
-															setDraftTalk(talk ?? null);
-															setCommentError("");
-															setMessage(
-																"新しい発表に切り替えました。下書きは残っています。",
+													{changed && (
+														<div className="notice change-notice" role="alert">
+															<Icon name="swap_horiz" />
+															<span>
+																<strong>発表が切り替わりました</strong>
+																<br />
+																送信先は変更していません。
+															</span>
+														</div>
+													)}
+													{commentError && (
+														<div className="notice error" role="alert">
+															<Icon name="error" />
+															<span>
+																<strong>送信できませんでした</strong>
+																<br />
+																{commentError}
+																<br />
+																入力は残っています。接続後に再送できます。
+															</span>
+														</div>
+													)}
+													<label htmlFor="comment-body">
+														{target.speakerName}さんへの
+														{changed ? "下書き" : "コメント"}
+													</label>
+													<textarea
+														id="comment-body"
+														placeholder="感想や質問を書いてみよう"
+														value={body}
+														disabled={sending}
+														required
+														onChange={(event) => {
+															if (!draftTalk) setDraftTalk(talk ?? null);
+															setBody(
+																Array.from(event.target.value)
+																	.slice(0, 200)
+																	.join(""),
 															);
 														}}
+														aria-describedby="composer-help character-count"
+													/>
+													<div className="composer-foot">
+														<small id="composer-help">
+															{displayName ? (
+																<button
+																	type="button"
+																	className="text-button"
+																	onClick={() => {
+																		setNameDraft(displayName);
+																		setNameDialogOpen(true);
+																	}}
+																>
+																	{displayName}として投稿
+																	<Icon name="edit" />
+																</button>
+															) : (
+																"初回の投稿時に表示名を入力"
+															)}
+														</small>
+														<small id="character-count">
+															{Array.from(body).length} / 200
+														</small>
+													</div>
+													<button
+														type="submit"
+														className="primary full"
+														disabled={
+															sending || !data.commentsEnabled || !body.trim()
+														}
 													>
-														新しい発表へ切り替える
+														{sending
+															? "送信中…"
+															: !data.commentsEnabled
+																? "コメントの受付は停止中です"
+																: changed
+																	? `${target.speakerName}さんへ送信`
+																	: commentError
+																		? "再送信"
+																		: "送信する"}
+														<Icon name="send" />
 													</button>
-												)}
-											</form>
-										)}
-									</section>
-								</div>
-								<footer className="page-footer">
-									<span>WORKSHOP COMMONS · つくる、つながる</span>
-									{admin && token ? (
-										<button
-											className="text-button"
-											type="button"
-											onClick={() => {
-												setToken("");
-												setMessage("");
-											}}
-										>
-											運営接続を終了
-										</button>
-									) : (
-										<a href={`/admin/comments?eventId=${eventId}`}>
-											運営の方はこちら
-											<Icon name="arrow_forward" />
-										</a>
-									)}
-								</footer>
-							</>
-						)}
-					</>
+													{changed && (
+														<button
+															type="button"
+															className="secondary full"
+															disabled={sending || !talk}
+															onClick={() => {
+																setDraftTalk(talk ?? null);
+																setCommentError("");
+																setMessage(
+																	"新しい発表に切り替えました。下書きは残っています。",
+																);
+															}}
+														>
+															新しい発表へ切り替える
+														</button>
+													)}
+												</form>
+											)}
+										</section>
+									</div>
+								</>
+							)}
+						</>
+					)}
+				</div>
+				{message && (
+					<output className="toast" aria-live="polite">
+						{message}
+					</output>
 				)}
-			</main>
-			<nav className="bottom-nav" aria-label="画面メニュー">
-				<a
-					href={`/engagement?eventId=${eventId}`}
-					className={!admin ? "active" : ""}
-					aria-current={!admin ? "page" : undefined}
+				<dialog
+					ref={nameDialog}
+					className="name-sheet"
+					onCancel={() => setNameDialogOpen(false)}
+					onClose={() => setNameDialogOpen(false)}
+					aria-labelledby="name-title"
 				>
-					<Icon name="chat_bubble" />
-					<span>ライブ</span>
-				</a>
-				<a
-					href={`/admin/comments?eventId=${eventId}`}
-					className={admin ? "active" : ""}
-					aria-current={admin ? "page" : undefined}
-				>
-					<Icon name="admin_panel_settings" />
-					<span>コメント管理</span>
-				</a>
-			</nav>
-			{message && (
-				<output className="toast" aria-live="polite">
-					{message}
-				</output>
-			)}
-			<dialog
-				ref={nameDialog}
-				className="name-sheet"
-				onCancel={() => setNameDialogOpen(false)}
-				onClose={() => setNameDialogOpen(false)}
-				aria-labelledby="name-title"
-			>
-				<form
-					onSubmit={(event) => {
-						event.preventDefault();
-						if (!nameDraft.trim()) return;
-						setDisplayName(nameDraft.trim());
-						setNameDialogOpen(false);
-						if (body.trim() && data?.commentsEnabled)
-							void sendComment(nameDraft.trim());
-					}}
-				>
-					<h2 id="name-title">コメントする名前</h2>
-					<p className="muted">
-						閲覧とリアクションは
-						<br />
-						名前なしで使えます。
-					</p>
-					<label htmlFor="display-name">表示名</label>
-					<input
-						id="display-name"
-						value={nameDraft}
-						onChange={(event) =>
-							setNameDraft(Array.from(event.target.value).slice(0, 40).join(""))
-						}
-						placeholder="例：山田"
-						required
-						autoComplete="nickname"
-					/>
-					<p className="subtle-tip">コメントと一緒に表示されます。</p>
-					<button type="submit" className="primary full">
-						{body.trim() ? "この名前で送信" : "この名前を使う"}
-						<Icon name="arrow_forward" />
-					</button>
-					<button
-						type="button"
-						className="secondary full"
-						onClick={() => setNameDialogOpen(false)}
+					<form
+						onSubmit={(event) => {
+							event.preventDefault();
+							if (!nameDraft.trim()) return;
+							setDisplayName(nameDraft.trim());
+							setNameDialogOpen(false);
+							if (body.trim() && data?.commentsEnabled)
+								void sendComment(nameDraft.trim());
+						}}
 					>
-						戻る
-					</button>
-				</form>
-			</dialog>
-		</div>
+						<h2 id="name-title">コメントする名前</h2>
+						<p className="muted">
+							閲覧とリアクションは
+							<br />
+							名前なしで使えます。
+						</p>
+						<label htmlFor="display-name">表示名</label>
+						<input
+							id="display-name"
+							value={nameDraft}
+							onChange={(event) =>
+								setNameDraft(
+									Array.from(event.target.value).slice(0, 40).join(""),
+								)
+							}
+							placeholder="例：山田"
+							required
+							autoComplete="nickname"
+						/>
+						<p className="subtle-tip">コメントと一緒に表示されます。</p>
+						<button type="submit" className="primary full">
+							{body.trim() ? "この名前で送信" : "この名前を使う"}
+							<Icon name="arrow_forward" />
+						</button>
+						<button
+							type="button"
+							className="secondary full"
+							onClick={() => setNameDialogOpen(false)}
+						>
+							戻る
+						</button>
+					</form>
+				</dialog>
+			</div>
+		</WorkspaceShell>
 	);
 }
 
