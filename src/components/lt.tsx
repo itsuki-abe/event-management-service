@@ -4,6 +4,7 @@ import {
 	ChevronUp,
 	CircleAlert,
 	type LucideIcon,
+	MessageSquare,
 	Monitor,
 	Pause,
 	Pencil,
@@ -296,6 +297,13 @@ function AudienceView({
 							<div className="time-panel">
 								<Timer talk={current} now={now} />
 							</div>
+							<a
+								className="wc-button wc-primary"
+								href={`/engagement?eventId=${data?.event?.id ?? 1}`}
+							>
+								<Icon icon={MessageSquare} size={18} />
+								リアクション・コメント
+							</a>
 						</>
 					) : (
 						<p className="muted">
@@ -496,6 +504,13 @@ function AdminView({
 				>
 					<Icon icon={Monitor} size={18} />
 					会場スクリーンを開く
+				</a>
+				<a
+					className="wc-button wc-secondary"
+					href={`/admin/comments?eventId=${data?.event?.id ?? 1}`}
+				>
+					<Icon icon={MessageSquare} size={18} />
+					コメント管理
 				</a>
 			</div>
 			<Connection connected={connected} hasData={Boolean(data)} />

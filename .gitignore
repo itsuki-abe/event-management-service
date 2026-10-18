@@ -1,4 +1,4 @@
-node_modules/
+node_modules
 dist/
 .tanstack/
 .wrangler/
@@ -12,3 +12,4 @@ dist/
 .DS_Store
 output/playwright/
 .playwright-cli/
+.sites/

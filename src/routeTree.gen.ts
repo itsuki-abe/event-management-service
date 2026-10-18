@@ -11,9 +11,12 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as EngagementRouteImport } from './routes/engagement'
 import { Route as LiveRouteImport } from './routes/live'
 import { Route as ScreenRouteImport } from './routes/screen'
 import { Route as SpeakerRouteImport } from './routes/speaker'
+import { Route as AdminCommentsRouteImport } from './routes/admin_.comments'
+import { Route as ApiEngagementRouteImport } from './routes/api.engagement'
 import { Route as ApiEventsRouteImport } from './routes/api.events'
 import { Route as ApiHealthRouteImport } from './routes/api.health'
 import { Route as ApiLoginRouteImport } from './routes/api.login'
@@ -35,6 +38,11 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EngagementRoute = EngagementRouteImport.update({
+  id: '/engagement',
+  path: '/engagement',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LiveRoute = LiveRouteImport.update({
   id: '/live',
   path: '/live',
@@ -48,6 +56,16 @@ const ScreenRoute = ScreenRouteImport.update({
 const SpeakerRoute = SpeakerRouteImport.update({
   id: '/speaker',
   path: '/speaker',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminCommentsRoute = AdminCommentsRouteImport.update({
+  id: '/admin_/comments',
+  path: '/admin/comments',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiEngagementRoute = ApiEngagementRouteImport.update({
+  id: '/api/engagement',
+  path: '/api/engagement',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiEventsRoute = ApiEventsRouteImport.update({
@@ -104,9 +122,12 @@ const ApiEventsEventIdSplatRoute = ApiEventsEventIdSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/engagement': typeof EngagementRoute
   '/live': typeof LiveRoute
   '/screen': typeof ScreenRoute
   '/speaker': typeof SpeakerRoute
+  '/admin/comments': typeof AdminCommentsRoute
+  '/api/engagement': typeof ApiEngagementRoute
   '/api/events': typeof ApiEventsRouteWithChildren
   '/api/health': typeof ApiHealthRoute
   '/api/login': typeof ApiLoginRoute
@@ -121,9 +142,12 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/engagement': typeof EngagementRoute
   '/live': typeof LiveRoute
   '/screen': typeof ScreenRoute
   '/speaker': typeof SpeakerRoute
+  '/admin/comments': typeof AdminCommentsRoute
+  '/api/engagement': typeof ApiEngagementRoute
   '/api/events': typeof ApiEventsRouteWithChildren
   '/api/health': typeof ApiHealthRoute
   '/api/login': typeof ApiLoginRoute
@@ -139,9 +163,12 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/engagement': typeof EngagementRoute
   '/live': typeof LiveRoute
   '/screen': typeof ScreenRoute
   '/speaker': typeof SpeakerRoute
+  '/admin_/comments': typeof AdminCommentsRoute
+  '/api/engagement': typeof ApiEngagementRoute
   '/api/events': typeof ApiEventsRouteWithChildren
   '/api/health': typeof ApiHealthRoute
   '/api/login': typeof ApiLoginRoute
@@ -158,9 +185,12 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/engagement'
     | '/live'
     | '/screen'
     | '/speaker'
+    | '/admin/comments'
+    | '/api/engagement'
     | '/api/events'
     | '/api/health'
     | '/api/login'
@@ -175,9 +205,12 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
+    | '/engagement'
     | '/live'
     | '/screen'
     | '/speaker'
+    | '/admin/comments'
+    | '/api/engagement'
     | '/api/events'
     | '/api/health'
     | '/api/login'
@@ -192,9 +225,12 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/engagement'
     | '/live'
     | '/screen'
     | '/speaker'
+    | '/admin_/comments'
+    | '/api/engagement'
     | '/api/events'
     | '/api/health'
     | '/api/login'
@@ -210,9 +246,12 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  EngagementRoute: typeof EngagementRoute
   LiveRoute: typeof LiveRoute
   ScreenRoute: typeof ScreenRoute
   SpeakerRoute: typeof SpeakerRoute
+  AdminCommentsRoute: typeof AdminCommentsRoute
+  ApiEngagementRoute: typeof ApiEngagementRoute
   ApiEventsRoute: typeof ApiEventsRouteWithChildren
   ApiHealthRoute: typeof ApiHealthRoute
   ApiLoginRoute: typeof ApiLoginRoute
@@ -240,6 +279,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/engagement': {
+      id: '/engagement'
+      path: '/engagement'
+      fullPath: '/engagement'
+      preLoaderRoute: typeof EngagementRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/live': {
       id: '/live'
       path: '/live'
@@ -259,6 +305,20 @@ declare module '@tanstack/react-router' {
       path: '/speaker'
       fullPath: '/speaker'
       preLoaderRoute: typeof SpeakerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin_/comments': {
+      id: '/admin_/comments'
+      path: '/admin/comments'
+      fullPath: '/admin/comments'
+      preLoaderRoute: typeof AdminCommentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/engagement': {
+      id: '/api/engagement'
+      path: '/api/engagement'
+      fullPath: '/api/engagement'
+      preLoaderRoute: typeof ApiEngagementRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/events': {
@@ -349,9 +409,12 @@ const ApiEventsRouteWithChildren = ApiEventsRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  EngagementRoute: EngagementRoute,
   LiveRoute: LiveRoute,
   ScreenRoute: ScreenRoute,
   SpeakerRoute: SpeakerRoute,
+  AdminCommentsRoute: AdminCommentsRoute,
+  ApiEngagementRoute: ApiEngagementRoute,
   ApiEventsRoute: ApiEventsRouteWithChildren,
   ApiHealthRoute: ApiHealthRoute,
   ApiLoginRoute: ApiLoginRoute,

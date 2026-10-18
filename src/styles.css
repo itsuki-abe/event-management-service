@@ -1,4 +1,10 @@
 @import "tailwindcss";
+@import "@fontsource/zen-maru-gothic/400.css";
+@import "@fontsource/zen-maru-gothic/500.css";
+@import "@fontsource/zen-maru-gothic/700.css";
+@import "@fontsource/zen-maru-gothic/900.css";
+@import "@fontsource/material-symbols-rounded/500.css";
 @import "./lt.css";
 @import "./participation.css";
+@import "./engagement.css";
 @import "./workspace.css";
