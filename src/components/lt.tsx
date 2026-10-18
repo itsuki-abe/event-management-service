@@ -394,16 +394,14 @@ function useReactions(eventId: number | undefined, talkId: number | undefined) {
 	return totals;
 }
 
-function SpeakerView({ data, connected, now, current, next }: ViewProps) {
-	const share = useSharePublisher();
-	// Unshared, the page follows the current talk. A new share is for the talk
-	// on deck, and the page then stays on that talk.
-	const pinned = data?.talks.find(
-		(talk) =>
-			talk.id === share.talkId && (share.stream || talk.status !== "ended"),
+function SpeakerView({ data, connected, now, current }: ViewProps) {
+	const eventId = data?.event?.id;
+	const share = useSharePublisher(eventId);
+	// The signed-in participant's own talk: the first one not yet finished.
+	const mine = data?.talks.filter(
+		(talk) => talk.speakerId === share.participantId,
 	);
-	const target = pinned ?? (current?.status === "pending" ? current : next);
-	const talk = pinned ?? current ?? target;
+	const talk = mine?.find((item) => item.status !== "ended") ?? mine?.at(-1);
 	const reactions = useReactions(data?.event?.id, talk?.id);
 	const projecting =
 		share.stream !== null && data?.projectedSessionId === share.sessionId;
@@ -414,11 +412,38 @@ function SpeakerView({ data, connected, now, current, next }: ViewProps) {
 				<p>自分の発表と会場の反応を確認できます。</p>
 			</div>
 			<Connection connected={connected} hasData={Boolean(data)} />
-			<div className="presenter-layout">
-				{talk ? (
+			{!share.loaded ? (
+				<p className="muted">読み込み中…</p>
+			) : !share.participantId ? (
+				<section className="wc-access-panel">
+					<h2>参加登録した端末で開いてください</h2>
+					<p>
+						発表者の確認には参加登録が必要です。スマートフォンで登録済みの場合は、このPCを接続してから開き直してください。
+					</p>
+					<div className="row">
+						<a className="wc-button wc-primary" href={`/events/${eventId}`}>
+							参加登録
+						</a>
+						<a
+							className="wc-button wc-secondary"
+							href={`/events/${eventId}/connect`}
+						>
+							このPCを接続
+						</a>
+					</div>
+				</section>
+			) : !talk ? (
+				<section className="wc-access-panel">
+					<h2>あなたの発表はまだありません</h2>
+					<p>
+						運営が発表者として登録すると、ここに持ち時間と画面共有の操作が表示されます。
+					</p>
+				</section>
+			) : (
+				<div className="presenter-layout">
 					<section
 						className="confidence"
-						aria-label={talk === current ? "現在の発表" : "自分の発表"}
+						aria-label={talk.id === current?.id ? "現在の発表" : "自分の発表"}
 					>
 						<Status talk={talk} now={now} />
 						<h1>{talk.title}</h1>
@@ -427,11 +452,13 @@ function SpeakerView({ data, connected, now, current, next }: ViewProps) {
 							<strong>{talk.speaker}</strong>
 						</div>
 						<Timer talk={talk} now={now} />
-						<p className="timer-caption">
-							{talk.status === "pending"
-								? "運営の開始操作をお待ちください"
-								: "共有が切断しても進行は運営が判断します"}
-						</p>
+						{talk.status !== "ended" && (
+							<p className="timer-caption">
+								{talk.status === "pending"
+									? "運営の開始操作をお待ちください"
+									: "共有が切断しても進行は運営が判断します"}
+							</p>
+						)}
 						{reactions && (
 							<>
 								<div className="reaction-totals">
@@ -449,89 +476,85 @@ function SpeakerView({ data, connected, now, current, next }: ViewProps) {
 							</>
 						)}
 					</section>
-				) : (
-					<p className="muted">
-						発表が選ばれると、ここにタイマーが表示されます。
-					</p>
-				)}
-				<section className="share-panel" aria-label="画面共有">
-					<div className="row between">
-						<h2>画面共有</h2>
-						{share.stream ? (
-							<span className={`badge ${projecting ? "blue" : "green"}`}>
-								{projecting ? "投影中" : "共有準備完了"}
-							</span>
-						) : (
-							share.disconnected && <span className="badge red">切断</span>
-						)}
-					</div>
-					{share.stream ? (
-						<div className="slide-preview">
-							<ShareVideo stream={share.stream} label="共有中の画面" />
-						</div>
-					) : (
-						share.disconnected && (
-							<p className="notice error">
-								<Icon icon={WifiOff} />
-								<span>
-									<strong>共有が切断されました</strong>
-									<br />
-									もう一度、共有する画面を選んでください。
+					<section className="share-panel" aria-label="画面共有">
+						<div className="row between">
+							<h2>画面共有</h2>
+							{share.stream ? (
+								<span className={`badge ${projecting ? "blue" : "green"}`}>
+									{projecting ? "投影中" : "共有準備完了"}
 								</span>
-							</p>
-						)
-					)}
-					{share.error && (
-						<p className="notice error" role="alert">
-							<Icon icon={CircleAlert} />
-							<span>{share.error}</span>
-						</p>
-					)}
-					{share.stream ? (
-						<>
-							{!projecting && (
-								<p className="small muted">
-									準備できました。運営が投影先を選ぶまでお待ちください。
-								</p>
+							) : (
+								share.disconnected && <span className="badge red">切断</span>
 							)}
+						</div>
+						{share.stream ? (
+							<div className="slide-preview">
+								<ShareVideo stream={share.stream} label="共有中の画面" />
+							</div>
+						) : (
+							share.disconnected && (
+								<p className="notice error">
+									<Icon icon={WifiOff} />
+									<span>
+										<strong>共有が切断されました</strong>
+										<br />
+										もう一度、共有する画面を選んでください。
+									</span>
+								</p>
+							)
+						)}
+						{share.error && (
+							<p className="notice error" role="alert">
+								<Icon icon={CircleAlert} />
+								<span>{share.error}</span>
+							</p>
+						)}
+						{share.stream ? (
+							<>
+								{!projecting && (
+									<p className="small muted">
+										準備できました。運営が投影先を選ぶまでお待ちください。
+									</p>
+								)}
+								<button
+									type="button"
+									className="danger full"
+									onClick={share.stop}
+								>
+									<Icon icon={ScreenShareOff} />
+									共有を停止する
+								</button>
+							</>
+						) : (
 							<button
 								type="button"
-								className="danger full"
-								onClick={share.stop}
+								className="primary full"
+								disabled={talk.status === "ended"}
+								onClick={share.prepare}
 							>
-								<Icon icon={ScreenShareOff} />
-								共有を停止する
+								<Icon icon={ScreenShare} />
+								画面共有を準備する
 							</button>
-						</>
-					) : (
-						<button
-							type="button"
-							className="primary full"
-							disabled={!target}
-							onClick={() => target && share.prepare(target.id)}
-						>
-							<Icon icon={ScreenShare} />
-							画面共有を準備する
-						</button>
-					)}
-					<div className="share-steps">
-						<h3>発表までの流れ</h3>
-						{[
-							"本人が共有する画面を選ぶ",
-							"運営がプレビューを確認し、投影する",
-							"準備後に運営がタイマーを開始",
-						].map((step, index) => (
-							<div key={step} className="row">
-								<span className="step-num">{index + 1}</span>
-								<span>{step}</span>
-							</div>
-						))}
-					</div>
-					<p className="small muted share-note">
-						共有する画面の選択には、ご本人の操作とブラウザーの許可が必要です。
-					</p>
-				</section>
-			</div>
+						)}
+						<div className="share-steps">
+							<h3>発表までの流れ</h3>
+							{[
+								"本人が共有する画面を選ぶ",
+								"運営がプレビューを確認し、投影する",
+								"準備後に運営がタイマーを開始",
+							].map((step, index) => (
+								<div key={step} className="row">
+									<span className="step-num">{index + 1}</span>
+									<span>{step}</span>
+								</div>
+							))}
+						</div>
+						<p className="small muted share-note">
+							共有する画面の選択には、ご本人の操作とブラウザーの許可が必要です。
+						</p>
+					</section>
+				</div>
+			)}
 		</>
 	);
 }
@@ -553,7 +576,7 @@ function ScreenView({
 	const offline =
 		current &&
 		current.status !== "ended" &&
-		projected?.talkId === current.id &&
+		projected?.participantId === current.speakerId &&
 		!projected.live;
 	if (offline)
 		return (
@@ -730,6 +753,7 @@ function AdminView({
 									<li key={talk.id} className="op-edit">
 										<TalkForm
 											talk={talk}
+											participants={data.participants ?? []}
 											disabled={disabled}
 											onCancel={() => setEditing(null)}
 											onSave={async (fields) => {
@@ -818,6 +842,7 @@ function AdminView({
 								発表を追加
 							</summary>
 							<TalkForm
+								participants={data.participants ?? []}
 								disabled={disabled}
 								onSave={async (fields, form) => {
 									if (
@@ -968,7 +993,7 @@ function ShareSource({
 	run: ViewProps["run"];
 }) {
 	const share = data.shares.find(
-		(item) => item.talkId === talk?.id && item.live,
+		(item) => item.participantId === talk?.speakerId && item.live,
 	);
 	const stream = useShareViewer(share);
 	const projecting = share && share.sessionId === data.projectedSessionId;
@@ -1051,14 +1076,16 @@ function IconButton({
 
 function TalkForm({
 	talk,
+	participants,
 	disabled,
 	onSave,
 	onCancel,
 }: {
 	talk?: Talk;
+	participants: { id: number; nickname: string }[];
 	disabled: boolean;
 	onSave: (
-		fields: { title: string; speaker: string; durationSeconds: number },
+		fields: { title: string; speakerId: number; durationSeconds: number },
 		form: HTMLFormElement,
 	) => Promise<void>;
 	onCancel?: () => void;
@@ -1075,7 +1102,7 @@ function TalkForm({
 				void onSave(
 					{
 						title: String(values.get("title")),
-						speaker: String(values.get("speaker")),
+						speakerId: Number(values.get("speakerId")),
 						durationSeconds,
 					},
 					form,
@@ -1093,12 +1120,18 @@ function TalkForm({
 			</label>
 			<label>
 				発表者
-				<input
-					name="speaker"
-					required
-					maxLength={100}
-					defaultValue={talk?.speaker}
-				/>
+				<select name="speakerId" required defaultValue={talk?.speakerId ?? ""}>
+					<option value="" disabled>
+						{participants.length
+							? "選択してください"
+							: "参加登録した人がいません"}
+					</option>
+					{participants.map((participant) => (
+						<option key={participant.id} value={participant.id}>
+							{participant.nickname}
+						</option>
+					))}
+				</select>
 			</label>
 			<label>
 				持ち時間

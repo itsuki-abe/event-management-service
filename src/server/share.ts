@@ -83,34 +83,33 @@ export async function postShare(request: Request) {
 	switch (action.action) {
 		case "status": {
 			const share = await env.DB.prepare(
-				"SELECT talk_id AS talkId FROM screen_shares WHERE session_id = ?",
+				"SELECT 1 FROM screen_shares WHERE session_id = ? AND heartbeat_at > 0",
 			)
 				.bind(session.id)
-				.first<{ talkId: number }>();
-			return json({ sessionId: session.id, talkId: share?.talkId ?? null });
+				.first();
+			return json({
+				sessionId: session.id,
+				participantId: session.participant_id,
+				shared: Boolean(share),
+			});
 		}
 		case "prepare": {
-			const talk = await env.DB.prepare(
-				"SELECT 1 FROM talks WHERE id = ? AND event_id = ? AND status != 'ended'",
-			)
-				.bind(action.talkId, event.id)
-				.first();
-			if (!talk) return fail("この発表は終了しています。", 409);
+			if (!session.participant_id)
+				return fail("先に参加登録してください。", 403);
 			await env.DB.batch([
 				env.DB.prepare(
 					"DELETE FROM screen_share_signals WHERE session_id = ?",
 				).bind(session.id),
-				env.DB.prepare(`INSERT INTO screen_shares (session_id, event_id, talk_id, started_at, heartbeat_at)
-					VALUES (?, ?, ?, ?, ?) ON CONFLICT (session_id) DO UPDATE SET
-					talk_id = excluded.talk_id, started_at = excluded.started_at, heartbeat_at = excluded.heartbeat_at`).bind(
+				env.DB.prepare(`INSERT INTO screen_shares (session_id, event_id, started_at, heartbeat_at)
+					VALUES (?, ?, ?, ?) ON CONFLICT (session_id) DO UPDATE SET
+					started_at = excluded.started_at, heartbeat_at = excluded.heartbeat_at`).bind(
 					session.id,
 					event.id,
-					action.talkId,
 					Date.now(),
 					now,
 				),
 			]);
-			return json({ sessionId: session.id });
+			return json({ ok: true });
 		}
 		case "poll": {
 			const [updated, offers] = await env.DB.batch<{

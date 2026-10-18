@@ -36,28 +36,32 @@ async function gathered(peer: RTCPeerConnection) {
 	]);
 }
 
-export function useSharePublisher() {
-	const [sessionId, setSessionId] = useState<number | null>(null);
-	const [talkId, setTalkId] = useState<number | null>(null);
+export function useSharePublisher(eventId: number | undefined) {
+	const [status, setStatus] = useState<{
+		sessionId: number;
+		participantId: number | null;
+	} | null>(null);
 	const [stream, setStream] = useState<MediaStream | null>(null);
 	const [disconnected, setDisconnected] = useState(false);
 	const [error, setError] = useState("");
 
 	useEffect(() => {
-		void shareApi<{ sessionId: number; talkId: number | null }>({
-			action: "status",
-		})
-			.then((status) => {
-				setSessionId(status.sessionId);
+		if (eventId === undefined) return;
+		void shareApi<{
+			sessionId: number;
+			participantId: number | null;
+			shared: boolean;
+		}>({ action: "status" })
+			.then((result) => {
+				setStatus(result);
 				// A share left over from before a reload cannot be resumed.
-				if (status.talkId !== null) {
-					setTalkId(status.talkId);
+				if (result.shared) {
 					setDisconnected(true);
 					void shareApi({ action: "stop" });
 				}
 			})
 			.catch(() => undefined);
-	}, []);
+	}, [eventId]);
 
 	const stop = useCallback(() => {
 		setStream((current) => {
@@ -68,42 +72,32 @@ export function useSharePublisher() {
 		void shareApi({ action: "stop" }).catch(() => undefined);
 	}, []);
 
-	const prepare = useCallback(
-		async (talk: number) => {
-			setError("");
-			let media: MediaStream;
-			try {
-				media = await navigator.mediaDevices.getDisplayMedia({
-					video: { frameRate: 30 },
-					audio: false,
-				});
-			} catch (cause) {
-				if (
-					!(cause instanceof DOMException && cause.name === "NotAllowedError")
-				)
-					setError("このブラウザーでは画面共有を開始できませんでした。");
-				return;
-			}
-			const [track] = media.getVideoTracks();
-			track.contentHint = "detail";
-			track.addEventListener("ended", stop);
-			try {
-				const result = await shareApi<{ sessionId: number }>({
-					action: "prepare",
-					talkId: talk,
-				});
-				setSessionId(result.sessionId);
-			} catch (cause) {
-				for (const item of media.getTracks()) item.stop();
-				setError(cause instanceof Error ? cause.message : "");
-				return;
-			}
-			setTalkId(talk);
-			setDisconnected(false);
-			setStream(media);
-		},
-		[stop],
-	);
+	const prepare = useCallback(async () => {
+		setError("");
+		let media: MediaStream;
+		try {
+			media = await navigator.mediaDevices.getDisplayMedia({
+				video: { frameRate: 30 },
+				audio: false,
+			});
+		} catch (cause) {
+			if (!(cause instanceof DOMException && cause.name === "NotAllowedError"))
+				setError("このブラウザーでは画面共有を開始できませんでした。");
+			return;
+		}
+		const [track] = media.getVideoTracks();
+		track.contentHint = "detail";
+		track.addEventListener("ended", stop);
+		try {
+			await shareApi({ action: "prepare" });
+		} catch (cause) {
+			for (const item of media.getTracks()) item.stop();
+			setError(cause instanceof Error ? cause.message : "");
+			return;
+		}
+		setDisconnected(false);
+		setStream(media);
+	}, [stop]);
 
 	// Answer every viewer offer while the stream is live; polling doubles as heartbeat.
 	useEffect(() => {
@@ -154,7 +148,16 @@ export function useSharePublisher() {
 		};
 	}, [stream, stop]);
 
-	return { sessionId, talkId, stream, disconnected, error, prepare, stop };
+	return {
+		sessionId: status?.sessionId ?? null,
+		participantId: status?.participantId ?? null,
+		loaded: status !== null,
+		stream,
+		disconnected,
+		error,
+		prepare,
+		stop,
+	};
 }
 
 export function useShareViewer(share: Share | undefined) {

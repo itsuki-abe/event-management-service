@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "2b7bf55f-42c8-4fb9-98a6-a48043e6d72f",
+  "id": "73245502-8974-4989-9275-26ad3feb66e5",
   "prevId": "355d90c7-c7d2-4baf-8246-36bf62e62b7e",
   "tables": {
     "chat_messages": {
@@ -905,13 +905,6 @@
           "notNull": true,
           "autoincrement": false
         },
-        "talk_id": {
-          "name": "talk_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
         "started_at": {
           "name": "started_at",
           "type": "integer",
@@ -950,21 +943,6 @@
             "event_id"
           ],
           "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "screen_shares_talk_id_event_id_talks_id_event_id_fk": {
-          "name": "screen_shares_talk_id_event_id_talks_id_event_id_fk",
-          "tableFrom": "screen_shares",
-          "tableTo": "talks",
-          "columnsFrom": [
-            "talk_id",
-            "event_id"
-          ],
-          "columnsTo": [
-            "id",
-            "event_id"
-          ],
-          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
