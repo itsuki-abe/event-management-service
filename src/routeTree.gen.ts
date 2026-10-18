@@ -15,6 +15,7 @@ import { Route as LiveRouteImport } from './routes/live'
 import { Route as ScreenRouteImport } from './routes/screen'
 import { Route as SpeakerRouteImport } from './routes/speaker'
 import { Route as ApiHealthRouteImport } from './routes/api.health'
+import { Route as ApiLoginRouteImport } from './routes/api.login'
 import { Route as ApiLtRouteImport } from './routes/api.lt'
 
 const IndexRoute = IndexRouteImport.update({
@@ -47,6 +48,11 @@ const ApiHealthRoute = ApiHealthRouteImport.update({
   path: '/api/health',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiLoginRoute = ApiLoginRouteImport.update({
+  id: '/api/login',
+  path: '/api/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiLtRoute = ApiLtRouteImport.update({
   id: '/api/lt',
   path: '/api/lt',
@@ -60,6 +66,7 @@ export interface FileRoutesByFullPath {
   '/screen': typeof ScreenRoute
   '/speaker': typeof SpeakerRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/login': typeof ApiLoginRoute
   '/api/lt': typeof ApiLtRoute
 }
 export interface FileRoutesByTo {
@@ -69,6 +76,7 @@ export interface FileRoutesByTo {
   '/screen': typeof ScreenRoute
   '/speaker': typeof SpeakerRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/login': typeof ApiLoginRoute
   '/api/lt': typeof ApiLtRoute
 }
 export interface FileRoutesById {
@@ -79,6 +87,7 @@ export interface FileRoutesById {
   '/screen': typeof ScreenRoute
   '/speaker': typeof SpeakerRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/login': typeof ApiLoginRoute
   '/api/lt': typeof ApiLtRoute
 }
 export interface FileRouteTypes {
@@ -90,6 +99,7 @@ export interface FileRouteTypes {
     | '/screen'
     | '/speaker'
     | '/api/health'
+    | '/api/login'
     | '/api/lt'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -99,6 +109,7 @@ export interface FileRouteTypes {
     | '/screen'
     | '/speaker'
     | '/api/health'
+    | '/api/login'
     | '/api/lt'
   id:
     | '__root__'
@@ -108,6 +119,7 @@ export interface FileRouteTypes {
     | '/screen'
     | '/speaker'
     | '/api/health'
+    | '/api/login'
     | '/api/lt'
   fileRoutesById: FileRoutesById
 }
@@ -118,6 +130,7 @@ export interface RootRouteChildren {
   ScreenRoute: typeof ScreenRoute
   SpeakerRoute: typeof SpeakerRoute
   ApiHealthRoute: typeof ApiHealthRoute
+  ApiLoginRoute: typeof ApiLoginRoute
   ApiLtRoute: typeof ApiLtRoute
 }
 
@@ -165,6 +178,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/login': {
+      id: '/api/login'
+      path: '/api/login'
+      fullPath: '/api/login'
+      preLoaderRoute: typeof ApiLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/lt': {
       id: '/api/lt'
       path: '/api/lt'
@@ -182,6 +202,7 @@ const rootRouteChildren: RootRouteChildren = {
   ScreenRoute: ScreenRoute,
   SpeakerRoute: SpeakerRoute,
   ApiHealthRoute: ApiHealthRoute,
+  ApiLoginRoute: ApiLoginRoute,
   ApiLtRoute: ApiLtRoute,
 }
 export const routeTree = rootRouteImport

@@ -39,12 +39,13 @@ export async function readSnapshot() {
 		talks: talks.results,
 		selectedTalkId: state.selectedTalkId,
 		revision: state.revision,
-		serverNow: nowSeconds(),
+		serverNow: Date.now() / 1000,
 	});
 }
 
 async function applyAction(action: LiveAction) {
 	const snapshot = await readSnapshot();
+	if (action.action === "authorize") return snapshot;
 	if (action.action === "createEvent") {
 		if (snapshot.event) throw new LiveError("イベントは作成済みです。", 409);
 		await env.DB.batch([
@@ -99,10 +100,9 @@ async function applyAction(action: LiveAction) {
 			);
 			mutations.push(
 				statement(
-					`UPDATE talks SET title = ?, sort_order = ?, duration_seconds = ?, updated_at = ?
+					`UPDATE talks SET title = ?, duration_seconds = ?, updated_at = ?
 				WHERE id = ? AND event_id = ? AND ${guard}`,
 					action.title,
-					action.sortOrder,
 					action.durationSeconds,
 					now,
 					talk.id,
@@ -126,7 +126,7 @@ async function applyAction(action: LiveAction) {
 					eventId,
 					eventId,
 					action.title,
-					action.sortOrder,
+					Math.max(0, ...snapshot.talks.map((item) => item.sortOrder)) + 1,
 					action.durationSeconds,
 				),
 			);
@@ -143,7 +143,50 @@ async function applyAction(action: LiveAction) {
 	} else {
 		const talk = snapshot.talks.find((item) => item.id === action.talkId);
 		if (!talk) throw new LiveError("発表が見つかりません。", 404);
-		if (action.action === "select") {
+		if (action.action === "deleteTalk") {
+			if (talk.status !== "pending")
+				throw new LiveError("未開始の発表だけ削除できます。", 409);
+			const speaker = await env.DB.prepare(
+				"SELECT speaker_id AS id FROM talks WHERE id = ?",
+			)
+				.bind(talk.id)
+				.first<{ id: number }>();
+			mutations.push(
+				statement(
+					`UPDATE event_live_state SET selected_talk_id = NULL
+				WHERE event_id = ? AND selected_talk_id = ? AND ${guard}`,
+					eventId,
+					talk.id,
+				),
+				statement(
+					`DELETE FROM talks WHERE id = ? AND event_id = ? AND ${guard}`,
+					talk.id,
+					eventId,
+				),
+				statement(
+					`DELETE FROM participants WHERE id = ?
+				AND NOT EXISTS (SELECT 1 FROM talks WHERE speaker_id = participants.id)
+				AND ${guard}`,
+					speaker?.id ?? null,
+				),
+			);
+		} else if (action.action === "move") {
+			const order = [...snapshot.talks];
+			const from = order.indexOf(talk);
+			const to = from + (action.direction === "up" ? -1 : 1);
+			if (to < 0 || to >= order.length)
+				throw new LiveError("これ以上移動できません。", 409);
+			[order[from], order[to]] = [order[to], order[from]];
+			for (const [index, item] of order.entries())
+				mutations.push(
+					statement(
+						`UPDATE talks SET sort_order = ? WHERE id = ? AND event_id = ? AND ${guard}`,
+						index + 1,
+						item.id,
+						eventId,
+					),
+				);
+		} else if (action.action === "select") {
 			if (active)
 				throw new LiveError("発表を終了してから切り替えてください。", 409);
 			mutations.push(
@@ -217,6 +260,19 @@ async function applyAction(action: LiveAction) {
 						),
 					);
 					break;
+				case "reset":
+					if (talk.status === "pending")
+						throw new LiveError("開始前の発表です。", 409);
+					mutations.push(
+						statement(
+							`UPDATE talks SET status = 'pending', elapsed_seconds = 0, resumed_at = NULL, ended_at = NULL, updated_at = ?
+						WHERE id = ? AND event_id = ? AND ${guard}`,
+							now,
+							talk.id,
+							eventId,
+						),
+					);
+					break;
 				case "next": {
 					const next = snapshot.talks.find(
 						(item) =>
@@ -274,21 +330,48 @@ export async function getLive() {
 	}
 }
 
-export async function postLive(request: Request) {
+const cookieName = "lt_organizer";
+
+function organizerKey() {
 	const key = "ORGANIZER_KEY" in env ? env.ORGANIZER_KEY : undefined;
+	return typeof key === "string" &&
+		key &&
+		key !== "replace-with-a-long-random-key"
+		? key
+		: undefined;
+}
+
+export function login(request: Request) {
+	const url = new URL(request.url);
+	const key = organizerKey();
+	const valid = key !== undefined && url.searchParams.get("key") === key;
+	return new Response(null, {
+		status: 303,
+		headers: {
+			Location: valid ? "/admin" : "/admin?invalid",
+			"Cache-Control": "no-store",
+			...(valid && {
+				"Set-Cookie": `${cookieName}=${encodeURIComponent(key)}; Path=/; HttpOnly; SameSite=Strict; Max-Age=2592000${url.protocol === "https:" ? "; Secure" : ""}`,
+			}),
+		},
+	});
+}
+
+export async function postLive(request: Request) {
+	const key = organizerKey();
+	const cookie = request.headers
+		.get("Cookie")
+		?.split(/;\s*/)
+		.find((item) => item.startsWith(`${cookieName}=`))
+		?.slice(cookieName.length + 1);
 	if (
-		typeof key !== "string" ||
 		!key ||
-		key === "replace-with-a-long-random-key"
+		!cookie ||
+		cookie !== encodeURIComponent(key) ||
+		!request.headers.get("Content-Type")?.startsWith("application/json")
 	) {
 		return Response.json(
-			{ error: "運営キーが設定されていません。" },
-			{ status: 503, headers: noStore },
-		);
-	}
-	if (request.headers.get("Authorization") !== `Bearer ${key}`) {
-		return Response.json(
-			{ error: "運営キーを確認してください。" },
+			{ error: "運営用リンクから開き直してください。" },
 			{ status: 401, headers: noStore },
 		);
 	}

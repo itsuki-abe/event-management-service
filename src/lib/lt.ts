@@ -24,6 +24,7 @@ export const liveSnapshotSchema = z.object({
 const revision = z.string().min(1).max(100);
 const talkId = z.number().int().positive();
 export const liveActionSchema = z.discriminatedUnion("action", [
+	z.object({ action: z.literal("authorize") }),
 	z.object({
 		action: z.literal("createEvent"),
 		name: z.string().trim().min(1).max(100),
@@ -35,7 +36,13 @@ export const liveActionSchema = z.discriminatedUnion("action", [
 		title: z.string().trim().min(1).max(200),
 		speaker: z.string().trim().min(1).max(100),
 		durationSeconds: z.number().int().min(1).max(86400),
-		sortOrder: z.number().int().min(0).max(100000),
+	}),
+	z.object({ action: z.literal("deleteTalk"), revision, talkId }),
+	z.object({
+		action: z.literal("move"),
+		revision,
+		talkId,
+		direction: z.enum(["up", "down"]),
 	}),
 	z.object({ action: z.literal("select"), revision, talkId }),
 	z.object({ action: z.literal("start"), revision, talkId }),
@@ -43,6 +50,7 @@ export const liveActionSchema = z.discriminatedUnion("action", [
 	z.object({ action: z.literal("resume"), revision, talkId }),
 	z.object({ action: z.literal("end"), revision, talkId }),
 	z.object({ action: z.literal("next"), revision, talkId }),
+	z.object({ action: z.literal("reset"), revision, talkId }),
 ]);
 
 export type LiveSnapshot = z.infer<typeof liveSnapshotSchema>;
