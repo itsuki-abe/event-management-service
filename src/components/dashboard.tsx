@@ -175,6 +175,36 @@ export function Dashboard() {
 					{live && " 最後に取得した情報を表示しています。"}
 				</p>
 			)}
+			{myTalk && (
+				<section className="wc-speaker-card">
+					<Presentation size={26} aria-hidden="true" />
+					<div>
+						<span className="wc-badge blue">あなたの発表</span>
+						<h2>{myTalk.title}</h2>
+						<p>
+							{session.devices.length > 1
+								? "発表に使うPC／Macで発表者画面を開き、画面共有を準備してください。"
+								: "画面共有には、発表に使うPC／Macの接続が必要です。"}
+						</p>
+						<div className="wc-banner-actions">
+							{session.devices.length > 1 ? (
+								<a className="wc-button wc-primary" href="/speaker">
+									発表者画面を開く
+									<ArrowRight size={18} aria-hidden="true" />
+								</a>
+							) : (
+								<a
+									className="wc-button wc-primary"
+									href={`${eventPath}/connect`}
+								>
+									<Laptop size={20} aria-hidden="true" />
+									PC／Macを接続
+								</a>
+							)}
+						</div>
+					</div>
+				</section>
+			)}
 			{notice && (
 				<div className="wc-notice">
 					<Info size={22} aria-hidden="true" />
@@ -185,16 +215,6 @@ export function Dashboard() {
 				</div>
 			)}
 			{wifi && <WifiCard guide={wifi} />}
-			{myTalk && (
-				<a className="wc-link-row wc-speaker-row" href="/speaker">
-					<Presentation size={24} aria-hidden="true" />
-					<span>
-						あなたの発表「{myTalk.title}」
-						<small>持ち時間の確認と画面共有の準備はこちら</small>
-					</span>
-					<ChevronRight size={22} aria-hidden="true" />
-				</a>
-			)}
 			<div className="wc-home-layout">
 				<section className="wc-home-intro">
 					<div className="wc-eyebrow">

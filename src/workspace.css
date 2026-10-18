@@ -822,18 +822,37 @@ textarea {
 	overflow: hidden;
 	padding: 0;
 }
-.wc-page > .wc-notice:first-child {
+.wc-page > .wc-notice:first-child,
+.wc-page > .wc-speaker-card + .wc-notice {
 	margin-top: 0;
 }
 .wc-page > .venue-wifi {
 	margin-top: 20px;
 }
-.wc-speaker-row {
-	margin-top: 20px;
-	padding: 17px 18px;
-	border: 2px solid var(--blue);
-	border-radius: 10px;
-}
 .wc-page > .wc-home-layout {
 	margin-top: 20px;
+}
+.wc-speaker-card {
+	display: flex;
+	gap: 14px;
+	align-items: flex-start;
+	margin-bottom: 20px;
+	padding: 18px 20px;
+	border: 2px solid var(--blue);
+	border-radius: 10px;
+	background: #fff;
+}
+.wc-speaker-card > svg {
+	flex-shrink: 0;
+	color: var(--blue);
+	margin-top: 2px;
+}
+.wc-speaker-card h2 {
+	margin: 8px 0 6px;
+	font-size: 20px;
+}
+.wc-speaker-card p {
+	margin-bottom: 12px;
+	font-size: 14px;
+	line-height: 1.7;
 }

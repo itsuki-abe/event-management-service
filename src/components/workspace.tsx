@@ -5,7 +5,7 @@ import {
 	MapPin,
 	MessageCircle,
 	MessagesSquare,
-	QrCode,
+	Presentation,
 	Settings2,
 	UserRound,
 } from "lucide-react";
@@ -77,6 +77,7 @@ export function WorkspaceShell({
 			label: "会場案内の設定",
 			href: `/admin/guide?eventId=${encodeURIComponent(eventId)}`,
 		},
+		{ id: "qr", label: "参加QR（受付に掲示）", href: `${eventPath}/qr` },
 	];
 	function items(includeManagement = false) {
 		return [
@@ -167,11 +168,10 @@ export function WorkspaceShell({
 					<footer className="wc-footer">
 						<span>WORKSHOP COMMONS</span>
 						<div>
-							<a href={`${eventPath}/qr`}>
-								<QrCode size={15} aria-hidden="true" />
-								参加QR
+							<a href="/speaker">
+								<Presentation size={15} aria-hidden="true" />
+								発表する方へ
 							</a>
-							<a href="/speaker">発表者</a>
 							<a href="/admin">運営</a>
 						</div>
 					</footer>

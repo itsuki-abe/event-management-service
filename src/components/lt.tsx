@@ -566,13 +566,6 @@ function AdminView({
 					<a href="/screen" target="_blank" rel="noreferrer">
 						画面共有・リアクション
 					</a>
-					<a
-						href={`/events/${data?.event?.id ?? 1}/qr`}
-						target="_blank"
-						rel="noreferrer"
-					>
-						参加QR（印刷用）
-					</a>
 				</nav>
 			</div>
 			{data?.event && <NoticeEditor eventId={String(data.event.id)} />}
@@ -724,6 +717,11 @@ function AdminView({
 						</details>
 						<p className="step-help">
 							「次の発表へ」で終了と選択を行い、準備後に開始します。
+						</p>
+						<p className="step-help">
+							発表者は参加登録済みの人から選びます。登壇者には、スマホとつないだPC／Macで
+							<strong> /speaker </strong>
+							（ページ下部の「発表する方へ」）を開いてもらいます。
 						</p>
 					</aside>
 
