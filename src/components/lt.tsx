@@ -268,7 +268,11 @@ function AudienceView({
 }: ViewProps) {
 	return (
 		<div className="app">
-			<SiteHeader name={data?.event?.name} page="LTライブ" />
+			<SiteHeader name={data?.event?.name} page="LTライブ">
+				<a href={`/engagement?eventId=${data?.event?.id ?? 1}`}>
+					リアクション・コメント
+				</a>
+			</SiteHeader>
 			<Connection connected={connected} hasData={Boolean(data)} />
 			<main className="page live-layout">
 				<section aria-label="現在の発表">
@@ -483,6 +487,9 @@ function AdminView({
 		<div className="app operator">
 			<SiteHeader name={data?.event?.name} page="LT進行">
 				<nav className="header-links" aria-label="表示画面を開く">
+					<a href={`/admin/comments?eventId=${data?.event?.id ?? 1}`}>
+						コメント管理
+					</a>
 					<a href="/live" target="_blank" rel="noreferrer">
 						参加者画面
 					</a>
