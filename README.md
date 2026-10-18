@@ -17,7 +17,23 @@ http://localhost:3000 で起動します。開発時のD1はローカルの `.wr
 
 ## スキーマを変更する
 
-`src/db/schema.ts` を編集して、SQLを生成・適用します。初期スキーマには、ID・タイトル・作成日時を持つ `events` テーブルがあります。
+`src/db/schema.ts` を編集して、SQLを生成・適用します。[Issue #7](https://github.com/itsuki-abe/event-management-service/issues/7) の共通データを次の11テーブルで扱います。
+
+- `events`、`participants`：イベントと参加者・運営者。
+- `device_sessions`、`pairing_requests`：端末セッションと期限付きの紐付けコード。
+- `event_guides`：会場案内。
+- `talks`、`event_live_state`：LT・タイマーと選択中の発表・投影対象・コメント受付。
+- `chat_messages`、`talk_comments`、`reactions`、`matching_requests`：会話・質問・反応・交流希望。
+
+IDは整数、日時はUnix秒で保存し、Drizzleでは `Date` として扱います。変更可能なデータの `updated_at` はDrizzleの更新時に設定します。直接SQLで更新する場合は明示的に設定してください。
+
+端末セッションは `event_id` を持ち、紐付け前は `participant_id` がNULLです。登壇者・コメント・リアクション・選択中LT・投影セッションのイベント一致は複合外部キーで検証します。ニックネームの重複と同じ発表への連続リアクションを許可します。
+
+LTの状態は `pending`・`running`・`paused`・`ended` です。`running` と `paused` はイベント内で合わせて1件に制限します。選択中の発表と投影対象はタイマーから独立しています。
+
+この変更はスキーマのみです。参加・ペアリング・権限確認・タイマー操作のAPIは未実装です。API実装時はトークンとコードのハッシュ化、期限・未使用条件付きのコード消費、運営操作の認可を行ってください。
+
+初期マイグレーションは作り直しています。旧スキーマからのデータ移行はありません。旧ローカルDBがある場合は、開発サーバーを止めて `.wrangler/state` を削除し、再適用してください。
 
 ```sh
 bun run db:generate
