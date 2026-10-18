@@ -641,3 +641,119 @@
 .wc-app:has(.screen-view) .wc-header {
 	position: static;
 }
+
+/* The receiving browser tab is the projection surface, including live reactions. */
+.projection-stage {
+	position: sticky;
+	top: 20px;
+	align-self: start;
+	min-width: 0;
+	z-index: 5;
+}
+.projection-stage .screen-stage {
+	position: relative;
+	top: 0;
+}
+.projection-toggle {
+	position: absolute;
+	right: 12px;
+	bottom: 12px;
+	z-index: 12;
+	border: 1px solid #ffffff60;
+	border-radius: 999px;
+	padding: 10px 18px;
+	background: #152133dd;
+	color: white;
+	cursor: pointer;
+	font: inherit;
+}
+.projection-stage.is-projecting,
+.projection-stage:fullscreen {
+	position: fixed;
+	inset: 0;
+	width: 100vw;
+	height: 100dvh;
+	max-width: none;
+	background: #10151d;
+	z-index: 1000;
+}
+.projection-stage.is-projecting .screen-stage {
+	width: 100%;
+	height: 100%;
+	aspect-ratio: auto;
+	border-radius: 0;
+}
+.reaction-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 9999;
+	pointer-events: none;
+	overflow: hidden;
+}
+.reaction-burst {
+	position: absolute;
+	inset: 0;
+	animation: reaction-burst-life 3.8s linear both;
+}
+.reaction-particle {
+	position: absolute;
+	left: var(--x);
+	bottom: -120px;
+	font-size: clamp(36px, 6vw, var(--size));
+	line-height: 1.2;
+	filter: drop-shadow(0 4px 12px #0005);
+	animation: reaction-firework 3s var(--delay) cubic-bezier(0.15, 0.4, 0.3, 1)
+		both;
+}
+@keyframes reaction-firework {
+	0% {
+		transform: translate(-50%, 0) scale(0.4) rotate(0deg);
+		opacity: 0;
+	}
+	12% {
+		opacity: 1;
+	}
+	40% {
+		transform: translate(calc(-50% + var(--drift) * 0.4), -55dvh) scale(1.4)
+			rotate(var(--spin));
+		opacity: 1;
+	}
+	100% {
+		transform: translate(calc(-50% + var(--drift)), -120dvh) scale(0.8)
+			rotate(var(--spin));
+		opacity: 0;
+	}
+}
+@keyframes reaction-burst-life {
+	from {
+		visibility: visible;
+	}
+	to {
+		visibility: visible;
+	}
+}
+@media (max-width: 760px) {
+	.projection-stage {
+		top: 8px;
+	}
+	.projection-toggle {
+		font-size: 12px;
+		padding: 8px 12px;
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.reaction-particle {
+		animation: reaction-gentle 3s var(--delay) ease both;
+		bottom: 15%;
+	}
+	@keyframes reaction-gentle {
+		0%,
+		100% {
+			opacity: 0;
+		}
+		20%,
+		80% {
+			opacity: 1;
+		}
+	}
+}
