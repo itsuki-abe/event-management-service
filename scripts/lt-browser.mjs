@@ -362,7 +362,7 @@ try {
 	});
 	await enrollment.click();
 	await participant.getByLabel(/^表示名/).fill("統合確認の参加者");
-	await participant.getByLabel(/^Xのユーザ名/).fill("@merge_qa");
+	await participant.getByLabel(/^Xのプロフィール/).fill("@merge_qa");
 	await participant
 		.getByRole("button", { name: "この名前で参加する →", exact: true })
 		.click();

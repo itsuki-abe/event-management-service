@@ -1,4 +1,5 @@
 import {
+	ContactRound,
 	Home,
 	Laptop,
 	MapPin,
@@ -22,6 +23,7 @@ export type WorkspaceSection =
 	| "engagement"
 	| "qr"
 	| "guide"
+	| "participants"
 	| "team";
 
 export function WorkspaceShell({
@@ -58,6 +60,12 @@ export function WorkspaceShell({
 			icon: MessageCircle,
 		},
 		{ id: "team", label: "チーム", href: `${eventPath}/team`, icon: Users },
+		{
+			id: "participants",
+			label: "参加者",
+			href: `${eventPath}/participants`,
+			icon: ContactRound,
+		},
 	];
 	const managementNavigation = [
 		{ id: "admin", label: "LT進行", href: "/admin", icon: Settings2 },

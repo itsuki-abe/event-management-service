@@ -24,6 +24,7 @@
 		"test:lt": "node scripts/lt-smoke.mjs",
 		"test:browser": "bun run build && node scripts/lt-browser.mjs",
 		"test:venue:browser": "bun run build && node scripts/venue-browser.mjs",
+		"test:participants:browser": "bun run build && node scripts/participants-browser.mjs",
 		"db:seed": "wrangler d1 execute DB --local --file scripts/seed-local.sql",
 		"test:engagement": "node scripts/engagement-smoke.mjs",
 		"db:seed:engagement": "wrangler d1 execute DB --local --file scripts/seed-engagement.sql",

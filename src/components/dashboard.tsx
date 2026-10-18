@@ -238,6 +238,13 @@ export function Dashboard() {
 						</a>
 					</div>
 					<div className="wc-quick-links">
+						<a className="wc-link-row" href={`${eventPath}/participants`}>
+							<Users size={24} aria-hidden="true" />
+							<span>
+								参加者を見る<small>自己紹介・Xでつながる</small>
+							</span>
+							<ChevronRight size={22} aria-hidden="true" />
+						</a>
 						<a className="wc-link-row" href={`${eventPath}/guide`}>
 							<MapPin size={24} aria-hidden="true" />
 							<span>

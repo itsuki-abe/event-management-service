@@ -14,6 +14,7 @@ import {
 	participationApi,
 } from "../lib/participation";
 import { type WorkspaceSection, WorkspaceShell } from "./workspace";
+import { XProfileLink } from "./x-profile-link";
 
 const errorMessage = (error: unknown) =>
 	error instanceof Error
@@ -98,22 +99,20 @@ function ProfileForm({
 				/>
 			</label>
 			<label>
-				Xのユーザ名 <span className="optional">任意</span>
+				Xのプロフィール <span className="optional">任意</span>
 				<input
 					name="xUsername"
 					autoComplete="off"
 					autoCapitalize="none"
 					autoCorrect="off"
 					spellCheck={false}
-					maxLength={16}
-					pattern="@?[A-Za-z0-9_]{1,15}"
-					title="半角英数字・_で15文字以内。先頭の@は省略できます。"
+					maxLength={200}
 					defaultValue={participant?.xUsername ?? ""}
-					placeholder="@your_name"
+					placeholder="@your_name または https://x.com/your_name"
 					aria-describedby="x-username-note"
 				/>
 				<span className="field-note" id="x-username-note">
-					@は付けても付けなくてもOK。入力しなくても参加できます。
+					ユーザー名、またはX・TwitterのプロフィールURLを入力できます。入力しなくても参加できます。
 				</span>
 			</label>
 			<label>
@@ -129,6 +128,9 @@ function ProfileForm({
 					ほかの参加者に伝えたい内容を、500文字以内で。
 				</span>
 			</label>
+			<p className="field-note">
+				表示名・自己紹介・Xのプロフィールは、このイベントの登録済み参加者に公開されます。あとから編集・削除できます。
+			</p>
 			<button type="submit" disabled={busy}>
 				{busy
 					? "保存しています…"
@@ -505,6 +507,9 @@ export function ParticipationPage({
 							? "このPCも、同じ参加者として利用できます。"
 							: "参加登録が完了しました。次は、お使いのPC／Macを接続しましょう。"}
 					</p>
+					<a className="back-link" href={`/events/${eventId}/participants`}>
+						参加者一覧で、今日の仲間を見つける →
+					</a>
 					{preview ? (
 						<section
 							className="card confirmation"
@@ -613,21 +618,16 @@ export function ParticipationPage({
 						) : (
 							<>
 								<p className="profile-name">{data.participant.nickname}</p>
-								{data.participant.xUsername && (
-									<p className="profile-x">
-										<a
-											href={`https://x.com/${data.participant.xUsername}`}
-											target="_blank"
-											rel="noopener noreferrer"
-										>
-											@{data.participant.xUsername}
-										</a>
-									</p>
-								)}
 								<p className="profile-body">
 									{data.participant.profile ||
 										"自己紹介はまだ登録されていません。"}
 								</p>
+								{data.participant.xUsername && (
+									<XProfileLink
+										username={data.participant.xUsername}
+										nickname={data.participant.nickname}
+									/>
+								)}
 							</>
 						)}
 					</section>

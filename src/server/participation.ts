@@ -1,3 +1,4 @@
+import { normalizeXUsername } from "../lib/x-profile";
 import { readPublicGuides } from "./venue";
 
 type Session = {
@@ -137,16 +138,6 @@ function profileFields(body: Record<string, unknown>) {
 	const nickname =
 		typeof body.nickname === "string" ? body.nickname.trim() : "";
 	const profile = typeof body.profile === "string" ? body.profile.trim() : "";
-	if (body.xUsername != null && typeof body.xUsername !== "string")
-		throw new ApiError(400, "Xのユーザ名を文字列で入力してください。");
-	const rawXUsername =
-		typeof body.xUsername === "string" ? body.xUsername.trim() : "";
-	const xUsername = rawXUsername.replace(/^@/, "");
-	if (rawXUsername && !/^[A-Za-z0-9_]{1,15}$/.test(xUsername))
-		throw new ApiError(
-			400,
-			"Xのユーザ名は、半角英数字・_（アンダースコア）で15文字以内にしてください。@は先頭に付けても構いません。",
-		);
 	if (
 		!nickname ||
 		Array.from(nickname).length > 40 ||
@@ -156,7 +147,16 @@ function profileFields(body: Record<string, unknown>) {
 			400,
 			"表示名は1〜40文字、自己紹介は500文字以内で入力してください。",
 		);
-	return { nickname, profile: profile || null, xUsername: xUsername || null };
+	let xUsername: string | null;
+	try {
+		xUsername = normalizeXUsername(body.xUsername);
+	} catch (error) {
+		throw new ApiError(
+			400,
+			error instanceof Error ? error.message : "Xの入力を確認してください。",
+		);
+	}
+	return { nickname, profile: profile || null, xUsername };
 }
 
 async function codeHash(body: Record<string, unknown>) {
@@ -281,6 +281,20 @@ export async function handleParticipation(
 		let session = await readSession(database, request, eventId);
 		if (request.method === "GET" && action === "session")
 			return respond(await snapshot(database, event, session));
+		if (request.method === "GET" && action === "participants") {
+			const member = requireParticipant(session);
+			const directory = await database
+				.prepare(
+					"SELECT id, nickname, profile, x_username AS xUsername FROM participants WHERE event_id = ? ORDER BY created_at, id",
+				)
+				.bind(eventId)
+				.all<ParticipantRow>();
+			return respond({
+				event,
+				currentParticipantId: member.participant_id,
+				participants: directory.results,
+			});
+		}
 		if (request.method !== "POST")
 			throw new ApiError(404, "ページが見つかりません。");
 		const body = await jsonBody(request);

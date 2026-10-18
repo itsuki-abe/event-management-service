@@ -1,5 +1,13 @@
 # Event management service
 
+## 参加者一覧とXプロフィール
+
+登録から一覧・検索・編集までのブラウザーテストは `bun run test:participants:browser` で実行できます。一時DBを使い、PC・スマホ幅での表示も検証します。
+
+参加登録・プロフィール編集で、任意のXプロフィールを保存できます。`https://x.com/username`、旧TwitterのプロフィールURL、`@username` に対応し、空欄で保存すると削除します。表示名・自己紹介・入力したXは、このイベントの登録済み参加者に公開します。
+
+`/events/1/participants` は、表示名・自己紹介・Xを検索できる参加者一覧です。ホーム・参加完了画面・「参加者」メニューから開けます。15秒ごとに更新し、Xは別タブで開きます。未登録者や別イベントのセッションでは一覧を取得できません。既存DBでは `bun run db:migrate` で `0004_participant_x_profile.sql` を適用してください。
+
 TanStack Start・React・TypeScript、Cloudflare Workers / D1、Drizzle ORMで構成した開発環境です。パッケージ管理にはBunを使います。
 
 ## 開発を始める

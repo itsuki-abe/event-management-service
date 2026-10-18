@@ -4,6 +4,11 @@ export type Participant = {
 	profile: string | null;
 	xUsername: string | null;
 };
+export type ParticipantDirectory = {
+	event: { id: number; name: string };
+	currentParticipantId: number;
+	participants: Participant[];
+};
 export type Device = { id: number; name: string; current: boolean };
 export type Participation = {
 	event: { id: number; name: string };
