@@ -137,6 +137,14 @@ bun run test:browser
 
 ## Cloudflareに公開する
 
+### Sitesに公開する
+
+Sitesの公開先は `.openai/hosting.json` に記録します。`bun run build:sites` は既存のTanStack Start Worker・静的アセットに加え、Sites用の設定と `drizzle/` のマイグレーションを `dist/.openai/` に同梱し、Cloudflareがローカルプレビュー用に出力したシークレットを取り除きます。Sitesが `DB` のD1を作成し、公開時にマイグレーションを適用します。ローカルのDB・サンプルデータは公開先へコピーしません。
+
+本番の運営操作にはSitesの環境変数で `ORGANIZER_KEY` と `ENGAGEMENT_ADMIN_TOKEN` をシークレットとして設定します。新規Sitesは所有者限定で、共有範囲はSites側で管理します。
+
+### Cloudflareへ直接公開する
+
 リモートのD1とWorkerは未作成です。`wrangler.jsonc` の `database_id` はローカル開発用の仮値です。
 
 公開する場合はCloudflareにログインし、D1を作成します。

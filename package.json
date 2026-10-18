@@ -9,6 +9,7 @@
 		"dev": "vite dev --port 3000",
 		"generate-routes": "tsr generate",
 		"build": "vite build",
+		"build:sites": "bun run build && node scripts/prepare-sites.mjs",
 		"preview": "bun run build && vite preview",
 		"format": "biome format --write .",
 		"lint": "biome lint .",
