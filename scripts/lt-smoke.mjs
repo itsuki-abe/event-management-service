@@ -13,6 +13,16 @@ assert.ok(
 	"Set ORGANIZER_KEY to the local server's organizer key.",
 );
 const endpoint = new URL("/api/lt", baseUrl);
+const loginUrl = new URL("/api/login", baseUrl);
+loginUrl.searchParams.set("key", "wrong-key");
+const rejected = await fetch(loginUrl, { redirect: "manual" });
+assert.equal(rejected.status, 303);
+assert.equal(rejected.headers.get("Set-Cookie"), null);
+loginUrl.searchParams.set("key", organizerKey);
+const accepted = await fetch(loginUrl, { redirect: "manual" });
+assert.equal(accepted.headers.get("Location"), "/admin");
+const cookie = accepted.headers.get("Set-Cookie")?.split(";")[0];
+assert.ok(cookie, "Organizer link must set a session cookie.");
 
 async function request(body, authenticated = true) {
 	const response = await fetch(endpoint, {
@@ -20,7 +30,7 @@ async function request(body, authenticated = true) {
 		headers: body
 			? {
 					"Content-Type": "application/json",
-					...(authenticated ? { Authorization: `Bearer ${organizerKey}` } : {}),
+					...(authenticated ? { Cookie: cookie } : {}),
 				}
 			: {},
 		body: body ? JSON.stringify(body) : undefined,
@@ -85,6 +95,9 @@ function elapsed(state, currentTalk) {
 	);
 }
 
+await denied({ action: "authorize" });
+await action("authorize");
+assert.equal(snapshot.event, null);
 await denied({ action: "createEvent", name: "Unauthorized event" });
 await action("createEvent", { name: "LT smoke event" });
 assert.equal(snapshot.event.name, "LT smoke event");
@@ -94,7 +107,6 @@ for (let index = 0; index < 3; index++) {
 	await action("saveTalk", {
 		title: `Talk ${index + 1}`,
 		speaker: `Speaker ${index + 1}`,
-		sortOrder: (index + 1) * 10,
 		durationSeconds: 300,
 	});
 	ids.push(
@@ -109,7 +121,6 @@ await denied({
 	title: "Unauthorized edit",
 	speaker: "Unknown",
 	durationSeconds: 1,
-	sortOrder: 0,
 });
 await denied({ action: "start", revision: snapshot.revision, talkId: firstId });
 assert.equal(
@@ -121,9 +132,11 @@ await action("saveTalk", {
 	id: thirdId,
 	title: "Edited talk",
 	speaker: "Edited speaker",
-	sortOrder: 5,
 	durationSeconds: 1,
 });
+await action("move", { talkId: thirdId, direction: "up" });
+await action("move", { talkId: thirdId, direction: "up" });
+await action("move", { talkId: thirdId, direction: "up" }, 409);
 assert.deepEqual(
 	snapshot.talks.map((item) => item.id),
 	[thirdId, firstId, secondId],
@@ -198,6 +211,11 @@ assert.ok(
 	talk(thirdId).elapsedSeconds > pausedElapsed,
 	"Ending must record the actual duration.",
 );
+await action("reset", { talkId: thirdId });
+assert.equal(talk(thirdId).status, "pending");
+assert.equal(talk(thirdId).elapsedSeconds, 0);
+await action("start", { talkId: thirdId });
+await action("end", { talkId: thirdId });
 const endedElapsed = talk(thirdId).elapsedSeconds;
 await action("next", { talkId: thirdId });
 assert.equal(snapshot.selectedTalkId, firstId);
@@ -214,6 +232,12 @@ assert.equal(
 	"Advancing must wait for an explicit start.",
 );
 assert.equal(talk(thirdId).elapsedSeconds, endedElapsed);
+await action("deleteTalk", { talkId: thirdId }, 409);
+await action("deleteTalk", { talkId: secondId });
+assert.equal(
+	snapshot.talks.some((item) => item.id === secondId),
+	false,
+);
 console.info(
-	"LT authorization, editing, ordering, concurrent start, pause/resume, overtime, end, next, and reload passed.",
+	"LT organizer link, editing, reordering, deletion, concurrent start, pause/resume, overtime, reset, end, next, and reload passed.",
 );

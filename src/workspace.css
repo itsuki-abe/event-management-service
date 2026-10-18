@@ -513,33 +513,6 @@ textarea {
 .wc-team-intro p {
 	color: var(--muted);
 }
-.lt-app .wc-page-heading h1 {
-	font-size: 30px;
-	margin-bottom: 10px;
-}
-.lt-app .operator-layout {
-	max-width: none;
-	padding: 0;
-	margin-top: 28px;
-}
-.lt-app .viewer-layout {
-	padding: 0;
-}
-.lt-app .connection {
-	padding: 0 0 16px;
-}
-.lt-app .operator-access {
-	padding: 10px 0 22px;
-}
-.lt-app .operator-access label {
-	min-width: 230px;
-}
-.lt-app.screen {
-	background: var(--blue);
-}
-.lt-app.screen .viewer-layout {
-	padding: 0 4vw;
-}
 @media (max-width: 1120px) {
 	.wc-header {
 		padding-inline: 24px;
@@ -734,47 +707,6 @@ textarea {
 		height: 158px;
 	}
 	.wc-team-intro p {
-		font-size: 14px;
-	}
-	.lt-app .operator-layout {
-		display: flex;
-		flex-direction: column;
-		gap: 28px;
-	}
-	.lt-app .current-talk {
-		order: -1;
-	}
-	.lt-app .schedule,
-	.lt-app .current-talk,
-	.lt-app .next-talk,
-	.lt-app .talk-editor {
-		padding: 20px 0;
-	}
-	.lt-app .operator-layout .next-talk {
-		padding: 20px;
-		align-self: stretch;
-	}
-	.lt-app .operator-access form {
-		width: 100%;
-	}
-	.lt-app .operator-access label {
-		flex: 1;
-		min-width: 0;
-	}
-	.lt-app .time {
-		font-size: clamp(48px, 15vw, 78px);
-	}
-	.lt-app .talk-editor form {
-		grid-template-columns: 1fr 1fr;
-	}
-	.lt-app .talk-editor form label:first-child {
-		grid-column: 1 / -1;
-	}
-	.lt-app .wc-page-heading h1 {
-		font-size: 27px;
-	}
-	.lt-app .timer-controls button {
-		padding: 12px 8px;
 		font-size: 14px;
 	}
 }

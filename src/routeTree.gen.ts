@@ -16,6 +16,7 @@ import { Route as ScreenRouteImport } from './routes/screen'
 import { Route as SpeakerRouteImport } from './routes/speaker'
 import { Route as ApiEventsRouteImport } from './routes/api.events'
 import { Route as ApiHealthRouteImport } from './routes/api.health'
+import { Route as ApiLoginRouteImport } from './routes/api.login'
 import { Route as ApiLtRouteImport } from './routes/api.lt'
 import { Route as EventsEventIdRouteImport } from './routes/events.$eventId'
 import { Route as EventsEventIdConnectRouteImport } from './routes/events.$eventId_.connect'
@@ -57,6 +58,11 @@ const ApiEventsRoute = ApiEventsRouteImport.update({
 const ApiHealthRoute = ApiHealthRouteImport.update({
   id: '/api/health',
   path: '/api/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiLoginRoute = ApiLoginRouteImport.update({
+  id: '/api/login',
+  path: '/api/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiLtRoute = ApiLtRouteImport.update({
@@ -103,6 +109,7 @@ export interface FileRoutesByFullPath {
   '/speaker': typeof SpeakerRoute
   '/api/events': typeof ApiEventsRouteWithChildren
   '/api/health': typeof ApiHealthRoute
+  '/api/login': typeof ApiLoginRoute
   '/api/lt': typeof ApiLtRoute
   '/events/$eventId': typeof EventsEventIdRoute
   '/events/$eventId/connect': typeof EventsEventIdConnectRoute
@@ -119,6 +126,7 @@ export interface FileRoutesByTo {
   '/speaker': typeof SpeakerRoute
   '/api/events': typeof ApiEventsRouteWithChildren
   '/api/health': typeof ApiHealthRoute
+  '/api/login': typeof ApiLoginRoute
   '/api/lt': typeof ApiLtRoute
   '/events/$eventId': typeof EventsEventIdRoute
   '/events/$eventId/connect': typeof EventsEventIdConnectRoute
@@ -136,6 +144,7 @@ export interface FileRoutesById {
   '/speaker': typeof SpeakerRoute
   '/api/events': typeof ApiEventsRouteWithChildren
   '/api/health': typeof ApiHealthRoute
+  '/api/login': typeof ApiLoginRoute
   '/api/lt': typeof ApiLtRoute
   '/events/$eventId': typeof EventsEventIdRoute
   '/events/$eventId_/connect': typeof EventsEventIdConnectRoute
@@ -154,6 +163,7 @@ export interface FileRouteTypes {
     | '/speaker'
     | '/api/events'
     | '/api/health'
+    | '/api/login'
     | '/api/lt'
     | '/events/$eventId'
     | '/events/$eventId/connect'
@@ -170,6 +180,7 @@ export interface FileRouteTypes {
     | '/speaker'
     | '/api/events'
     | '/api/health'
+    | '/api/login'
     | '/api/lt'
     | '/events/$eventId'
     | '/events/$eventId/connect'
@@ -186,6 +197,7 @@ export interface FileRouteTypes {
     | '/speaker'
     | '/api/events'
     | '/api/health'
+    | '/api/login'
     | '/api/lt'
     | '/events/$eventId'
     | '/events/$eventId_/connect'
@@ -203,6 +215,7 @@ export interface RootRouteChildren {
   SpeakerRoute: typeof SpeakerRoute
   ApiEventsRoute: typeof ApiEventsRouteWithChildren
   ApiHealthRoute: typeof ApiHealthRoute
+  ApiLoginRoute: typeof ApiLoginRoute
   ApiLtRoute: typeof ApiLtRoute
   EventsEventIdRoute: typeof EventsEventIdRoute
   EventsEventIdConnectRoute: typeof EventsEventIdConnectRoute
@@ -260,6 +273,13 @@ declare module '@tanstack/react-router' {
       path: '/api/health'
       fullPath: '/api/health'
       preLoaderRoute: typeof ApiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/login': {
+      id: '/api/login'
+      path: '/api/login'
+      fullPath: '/api/login'
+      preLoaderRoute: typeof ApiLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/lt': {
@@ -334,6 +354,7 @@ const rootRouteChildren: RootRouteChildren = {
   SpeakerRoute: SpeakerRoute,
   ApiEventsRoute: ApiEventsRouteWithChildren,
   ApiHealthRoute: ApiHealthRoute,
+  ApiLoginRoute: ApiLoginRoute,
   ApiLtRoute: ApiLtRoute,
   EventsEventIdRoute: EventsEventIdRoute,
   EventsEventIdConnectRoute: EventsEventIdConnectRoute,

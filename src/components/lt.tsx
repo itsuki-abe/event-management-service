@@ -11,10 +11,11 @@ import { WorkspaceShell } from "./workspace";
 
 type Mode = "audience" | "admin" | "screen" | "speaker";
 type Talk = LiveSnapshot["talks"][number];
-const statuses = {
+type TalkAction = Extract<LiveAction, { talkId: number }>["action"];
+const statusLabels = {
 	pending: "開始待ち",
 	running: "発表中",
-	paused: "一時停止",
+	paused: "一時停止中",
 	ended: "終了",
 };
 
@@ -39,29 +40,31 @@ function useLive() {
 		setConnected(true);
 	}, []);
 
-	useEffect(() => {
-		let stopped = false;
-		let timeout: ReturnType<typeof setTimeout>;
-		const controller = new AbortController();
-		async function poll() {
-			if (!writing.current) {
-				const ticket = ++generation.current;
-				const started = performance.now();
-				try {
-					const response = await fetch("/api/lt", {
-						cache: "no-store",
-						signal: controller.signal,
-					});
-					if (!response.ok) throw new Error("進行情報を取得できませんでした。");
-					const snapshot = liveSnapshotSchema.parse(await response.json());
-					if (!stopped && ticket === generation.current)
-						accept(snapshot, started);
-				} catch {
-					if (!stopped && ticket === generation.current) setConnected(false);
-				}
+	const load = useCallback(
+		async (signal?: AbortSignal) => {
+			if (writing.current) return;
+			const ticket = ++generation.current;
+			const started = performance.now();
+			try {
+				const response = await fetch("/api/lt", { cache: "no-store", signal });
+				if (!response.ok) throw new Error(String(response.status));
+				const snapshot = liveSnapshotSchema.parse(await response.json());
+				if (ticket === generation.current) accept(snapshot, started);
+			} catch {
+				if (ticket === generation.current && !signal?.aborted)
+					setConnected(false);
 			}
-			if (!stopped) timeout = setTimeout(poll, 1500);
-		}
+		},
+		[accept],
+	);
+
+	useEffect(() => {
+		const controller = new AbortController();
+		let timeout: ReturnType<typeof setTimeout>;
+		const poll = async () => {
+			await load(controller.signal);
+			if (!controller.signal.aborted) timeout = setTimeout(poll, 1500);
+		};
 		void poll();
 		const interval = setInterval(
 			() =>
@@ -69,547 +72,824 @@ function useLive() {
 					clock.current.server +
 						(performance.now() - clock.current.received) / 1000,
 				),
-			200,
+			250,
 		);
 		return () => {
-			stopped = true;
 			controller.abort();
 			clearTimeout(timeout);
 			clearInterval(interval);
 		};
-	}, [accept]);
+	}, [load]);
 
-	async function run(action: LiveAction, key: string) {
-		if (writing.current) return false;
-		writing.current = true;
-		++generation.current;
-		setBusy(true);
-		setError("");
-		const started = performance.now();
-		try {
-			const response = await fetch("/api/lt", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${key}`,
-				},
-				body: JSON.stringify(action),
-			});
-			if (!response.ok) {
+	const run = useCallback(
+		async (action: LiveAction) => {
+			if (writing.current) return undefined;
+			writing.current = true;
+			++generation.current;
+			setBusy(true);
+			setError("");
+			const started = performance.now();
+			let ok = false;
+			try {
+				const response = await fetch("/api/lt", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(action),
+				});
 				const body: unknown = await response.json();
-				throw new Error(
-					body &&
-						typeof body === "object" &&
-						"error" in body &&
-						typeof body.error === "string"
-						? body.error
-						: "操作に失敗しました。もう一度お試しください。",
+				if (!response.ok)
+					throw new Error(
+						body &&
+							typeof body === "object" &&
+							"error" in body &&
+							typeof body.error === "string"
+							? body.error
+							: "操作に失敗しました。もう一度お試しください。",
+					);
+				accept(liveSnapshotSchema.parse(body), started);
+				ok = true;
+			} catch (cause) {
+				setError(
+					cause instanceof Error && !(cause instanceof TypeError)
+						? cause.message
+						: "通信に失敗しました。もう一度お試しください。",
 				);
+			} finally {
+				writing.current = false;
+				setBusy(false);
 			}
-			accept(liveSnapshotSchema.parse(await response.json()), started);
-			return true;
-		} catch (cause) {
-			setError(
-				cause instanceof Error
-					? cause.message
-					: "通信に失敗しました。もう一度お試しください。",
-			);
-			return false;
-		} finally {
-			writing.current = false;
-			setBusy(false);
-		}
-	}
+			if (!ok) void load();
+			return ok;
+		},
+		[accept, load],
+	);
 	return { data, connected, error, busy, now, run };
 }
 
-function Timer({ talk, now }: { talk: Talk; now: number }) {
-	const remaining = talk.durationSeconds - elapsedSeconds(talk, now);
-	const overtime = remaining <= 0;
-	const warning = !overtime && remaining <= 60 && talk.status !== "ended";
-	return (
-		<div
-			className={`timer ${overtime ? "overtime" : warning ? "warning" : ""}`}
-		>
-			<span className="timer-label">
-				{talk.status === "pending"
-					? "持ち時間"
+function timer(talk: Talk, now: number) {
+	const remaining = Math.ceil(talk.durationSeconds - elapsedSeconds(talk, now));
+	const over = remaining < 0 && talk.status !== "pending";
+	return {
+		text: formatTime(Math.abs(remaining)),
+		over,
+		label:
+			talk.status === "pending"
+				? "持ち時間"
+				: over
+					? "超過時間"
 					: talk.status === "ended"
 						? "終了時の残り時間"
-						: talk.status === "paused"
-							? "一時停止中"
-							: "残り時間"}
-			</span>
-			<span className="time">{formatTime(Math.ceil(remaining))}</span>
-			<span className="timer-caption">
-				{talk.status === "ended"
-					? `発表時間 ${formatTime(elapsedSeconds(talk, now))}`
-					: overtime
-						? "時間超過"
-						: warning
-							? "残り1分以内"
-							: `持ち時間 ${formatTime(talk.durationSeconds)}`}
-			</span>
-		</div>
-	);
+						: "残り時間",
+	};
 }
 
-function Avatar({ name }: { name: string }) {
+function Icon({ name }: { name: string }) {
 	return (
-		<span className="avatar" aria-hidden="true">
-			{Array.from(name)[0]}
+		<span className="mi" aria-hidden="true">
+			{name}
 		</span>
 	);
 }
 
+function Status({ talk, now }: { talk: Talk; now: number }) {
+	const over = timer(talk, now).over && talk.status !== "ended";
+	const tone = over
+		? "red"
+		: { pending: "blue", running: "peach", paused: "yellow", ended: "gray" }[
+				talk.status
+			];
+	return (
+		<span className={`badge ${tone}`}>
+			{over ? "時間超過" : statusLabels[talk.status]}
+		</span>
+	);
+}
+
+function Initial({ talk }: { talk: Talk }) {
+	return (
+		<span
+			className={`initial ${talk.id % 2 ? "" : "peach"}`}
+			aria-hidden="true"
+		>
+			{Array.from(talk.speaker)[0]}
+		</span>
+	);
+}
+
+function Timer({ talk, now }: { talk: Talk; now: number }) {
+	const t = timer(talk, now);
+	return (
+		<div className={`time ${t.over ? "over" : ""}`}>
+			<span className="timer-caption">{t.label}</span>
+			<span className="timer">{t.text}</span>
+		</div>
+	);
+}
+
+function Connection({
+	connected,
+	hasData,
+}: {
+	connected: boolean;
+	hasData: boolean;
+}) {
+	if (connected) return null;
+	return (
+		<output className="notice connection">
+			<Icon name="wifi_off" />
+			<span>
+				{hasData ? "再接続中… 最後に取得した情報を表示しています" : "接続中…"}
+			</span>
+		</output>
+	);
+}
+
+function parseDuration(value: string) {
+	const match = /^\s*(\d{1,3})(?::([0-5]?\d))?\s*$/.exec(value);
+	if (!match) return null;
+	const seconds = Number(match[1]) * 60 + Number(match[2] ?? 0);
+	return seconds > 0 ? seconds : null;
+}
+
+const minutes = (seconds: number) =>
+	seconds % 60 ? formatTime(seconds) : `${seconds / 60}分`;
+const pad = (value: number) => String(value).padStart(2, "0");
+
 export function LtPage({ mode = "audience" }: { mode?: Mode }) {
-	const { data, connected, error, busy, now, run } = useLive();
-	const [key, setKey] = useState("");
-	const [editing, setEditing] = useState<Talk | null>(null);
-	useEffect(() => {
-		if (mode === "admin")
-			setKey(sessionStorage.getItem("lt-organizer-key") ?? "");
-	}, [mode]);
+	const live = useLive();
+	const { data } = live;
 	const current = data?.talks.find((talk) => talk.id === data.selectedTalkId);
-	const currentIndex =
-		data?.talks.findIndex((talk) => talk.id === data.selectedTalkId) ?? -1;
+	const currentIndex = current ? (data?.talks.indexOf(current) ?? -1) : -1;
 	const next = data?.talks
 		.slice(currentIndex + 1)
 		.find((talk) => talk.status === "pending");
-	const active = data?.talks.some(
-		(talk) => talk.status === "running" || talk.status === "paused",
-	);
-	const disabled = busy || !connected;
-	const admin = mode === "admin";
-	const send = (action: "start" | "pause" | "resume" | "end" | "next") => {
-		if (data && current)
-			void run({ action, revision: data.revision, talkId: current.id }, key);
-	};
+	const position = current
+		? `${pad(currentIndex + 1)} / ${pad(data?.talks.length ?? 0)}`
+		: "";
+	const view = { ...live, current, next, position };
+
+	const content =
+		mode === "admin" ? (
+			<AdminView {...view} />
+		) : mode === "speaker" ? (
+			<SpeakerView {...view} />
+		) : mode === "screen" ? (
+			<ScreenView {...view} />
+		) : (
+			<AudienceView {...view} />
+		);
 	return (
 		<WorkspaceShell
 			section={mode === "audience" ? "live" : mode === "screen" ? "live" : mode}
+			eventId={data?.event?.id ?? 1}
 			name={data?.event?.name}
-			eventId={data?.event?.id}
 			bare={mode === "screen"}
 		>
-			<div className={`lt-app ${mode}`}>
-				{mode === "screen" ? (
-					<header className="site-header">
-						<div>
-							<a className="brand" href="/">
-								WORKSHOP COMMONS
-							</a>
-							<span className="subtitle">
-								{mode === "screen"
-									? "会場スクリーン"
-									: admin
-										? "LT進行"
-										: mode === "speaker"
-											? "発表者"
-											: "LTライブ"}
-							</span>
-						</div>
-						{mode !== "screen" && (
-							<nav aria-label="画面切り替え">
-								<a
-									href="/live"
-									aria-current={mode === "audience" ? "page" : undefined}
-								>
-									ライブ
-								</a>
-								<a href="/admin" aria-current={admin ? "page" : undefined}>
-									LT進行
-								</a>
-								<a
-									href="/speaker"
-									aria-current={mode === "speaker" ? "page" : undefined}
-								>
-									発表者
-								</a>
-								<a href="/screen" target="_blank" rel="noreferrer">
-									投影画面 ↗
-								</a>
-							</nav>
-						)}
-					</header>
-				) : (
-					<div className="wc-page-heading">
-						<span className="wc-eyebrow">
-							{admin
-								? "EVENT OPERATIONS"
-								: mode === "speaker"
-									? "YOUR STAGE"
-									: "LIVE & CONNECT"}
-						</span>
-						<h1>
-							{admin
-								? "LT・ステージの進行"
-								: mode === "speaker"
-									? "発表者ビュー"
-									: "LTライブ"}
-						</h1>
-						<p>発表と残り時間を、会場のみんなで共有。</p>
-					</div>
-				)}
-				<output className={`connection ${connected ? "online" : "offline"}`}>
-					{connected
-						? "進行情報を同期中"
-						: data
-							? "再接続中… 最後に取得した情報を表示しています"
-							: "進行情報に接続中…"}
-				</output>
-				{error && (
-					<p className="error" role="alert">
-						{error}
-					</p>
-				)}
-				{admin && (
-					<section className="operator-access" aria-label="運営アクセス">
-						{!key ? (
-							<form
-								onSubmit={(event) => {
-									event.preventDefault();
-									const value = String(
-										new FormData(event.currentTarget).get("key") ?? "",
-									).trim();
-									if (value) {
-										sessionStorage.setItem("lt-organizer-key", value);
-										setKey(value);
-									}
-								}}
-							>
-								<label>
-									運営キー
-									<input
-										name="key"
-										type="password"
-										autoComplete="off"
-										required
-										placeholder="運営から共有されたキー"
-									/>
-								</label>
-								<button type="submit">運営操作を開く</button>
-							</form>
-						) : (
-							<>
-								<span>運営操作用のキーを設定済み</span>
-								<button
-									className="text-button"
-									type="button"
-									onClick={() => {
-										sessionStorage.removeItem("lt-organizer-key");
-										setKey("");
-									}}
-								>
-									キーを変更
-								</button>
-							</>
-						)}
-					</section>
-				)}
-				{data && !data.event && (
-					<section className="empty">
-						<h1>イベントの開始を待っています</h1>
-						{admin && key ? (
-							<form
-								onSubmit={(event) => {
-									event.preventDefault();
-									void run(
-										{
-											action: "createEvent",
-											name: String(
-												new FormData(event.currentTarget).get("name"),
-											),
-										},
-										key,
-									);
-								}}
-							>
-								<label>
-									イベント名
-									<input
-										name="name"
-										required
-										maxLength={100}
-										placeholder="イベント名を入力"
-									/>
-								</label>
-								<button disabled={disabled} type="submit">
-									イベントを作成
-								</button>
-							</form>
-						) : (
-							<p>運営が発表を登録すると、ここに表示されます。</p>
-						)}
-					</section>
-				)}
-				{data?.event && (
-					<div className={admin ? "operator-layout" : "viewer-layout"}>
-						{admin && (
-							<aside className="schedule">
-								<h2>
-									進行リスト{" "}
-									<span className="count">{data.talks.length}件</span>
-								</h2>
-								<ol>
-									{data.talks.map((talk, index) => (
-										<li
-											key={talk.id}
-											className={talk.id === current?.id ? "selected" : ""}
-										>
-											<button
-												className="talk-select"
-												type="button"
-												disabled={
-													disabled ||
-													!key ||
-													Boolean(active) ||
-													current?.id === talk.id
-												}
-												onClick={() =>
-													void run(
-														{
-															action: "select",
-															revision: data.revision,
-															talkId: talk.id,
-														},
-														key,
-													)
-												}
-											>
-												<span className="order">{index + 1}</span>
-												<span>
-													<strong>{talk.speaker}</strong>
-													<span className="talk-title">{talk.title}</span>
-													<span className={`badge ${talk.status}`}>
-														{statuses[talk.status]}
-													</span>
-												</span>
-											</button>
-											{key && talk.status === "pending" && (
-												<button
-													className="text-button edit-button"
-													type="button"
-													disabled={busy}
-													onClick={() => setEditing(talk)}
-												>
-													編集
-												</button>
-											)}
-										</li>
-									))}
-								</ol>
-								{!data.talks.length && <p>発表がまだ登録されていません。</p>}
-							</aside>
-						)}
-						<section className="current-talk" aria-label="現在の発表">
-							<h1>{admin ? "現在の発表" : "LTライブ"}</h1>
-							{current ? (
-								<>
-									<div className="status-row">
-										<span className={`badge ${current.status}`}>
-											{statuses[current.status]}
-										</span>
-									</div>
-									<h2 className="current-title">{current.title}</h2>
-									<div className="speaker-info">
-										<Avatar name={current.speaker} />
-										<span>{current.speaker}</span>
-									</div>
-									<Timer talk={current} now={now} />
-									{admin && key && (
-										<div className="timer-controls">
-											<div className="pause-finish">
-												<button
-													type="button"
-													className="secondary"
-													disabled={
-														disabled ||
-														!["running", "paused"].includes(current.status)
-													}
-													onClick={() =>
-														send(
-															current.status === "paused" ? "resume" : "pause",
-														)
-													}
-												>
-													{current.status === "paused"
-														? "タイマー再開"
-														: "一時停止"}
-												</button>
-												<button
-													type="button"
-													className="finish"
-													disabled={
-														disabled ||
-														!["running", "paused"].includes(current.status)
-													}
-													onClick={() => send("end")}
-												>
-													発表を終了
-												</button>
-											</div>
-											<div className="advance-controls">
-												<h3>
-													{current.status === "pending"
-														? "準備ができたら開始"
-														: "次の発表へ"}
-												</h3>
-												<p>
-													{current.status === "pending"
-														? "発表者の準備ができたら、タイマーを開始してください。"
-														: "現在の発表を終了し、次の発表を開始待ちにします。"}
-												</p>
-												{current.status === "pending" ? (
-													<button
-														type="button"
-														disabled={disabled}
-														onClick={() => send("start")}
-													>
-														タイマー開始
-													</button>
-												) : (
-													<button
-														type="button"
-														disabled={disabled || !next}
-														onClick={() => send("next")}
-													>
-														次の発表へ →
-													</button>
-												)}
-											</div>
-										</div>
-									)}
-								</>
-							) : (
-								<div className="empty">
-									<p>発表の開始をお待ちください。</p>
-									{admin && <p>進行リストから発表を選択してください。</p>}
+			<div className={`lt-app ${mode}`}>{content}</div>
+		</WorkspaceShell>
+	);
+}
+
+type ViewProps = ReturnType<typeof useLive> & {
+	current: Talk | undefined;
+	next: Talk | undefined;
+	position: string;
+};
+
+function SiteHeader({
+	name,
+	page,
+	children,
+}: {
+	name?: string;
+	page: string;
+	children?: React.ReactNode;
+}) {
+	return (
+		<header className="site-header">
+			<div className="brand">
+				{name ?? "LTライブ"}
+				<small>{page}</small>
+			</div>
+			{children}
+		</header>
+	);
+}
+
+function AudienceView({
+	data,
+	connected,
+	now,
+	current,
+	next,
+	position,
+}: ViewProps) {
+	return (
+		<div className="app">
+			<SiteHeader name={data?.event?.name} page="LTライブ" />
+			<Connection connected={connected} hasData={Boolean(data)} />
+			<div className="page live-layout">
+				<section aria-label="現在の発表">
+					{current ? (
+						<>
+							<div className="live-title">
+								<div className="row between">
+									<span className="eyebrow">LT LIVE · {position}</span>
+									<Status talk={current} now={now} />
 								</div>
-							)}
-						</section>
-						<section className="next-talk">
-							<h2>次の発表</h2>
-							{next ? (
-								<>
-									<div className="speaker-info">
-										<Avatar name={next.speaker} />
-										<strong>{next.speaker}</strong>
-									</div>
-									<h3>{next.title}</h3>
-									<p>持ち時間 {formatTime(next.durationSeconds)}</p>
-									<span className="badge pending">開始待ち</span>
-								</>
-							) : (
-								<p>次の発表はありません。</p>
-							)}
-							{mode === "speaker" && (
-								<p className="speaker-help">
-									運営の開始操作でタイマーが動きます。準備ができたら運営へお知らせください。
-								</p>
-							)}
-						</section>
-						{admin && key && (
-							<section className="talk-editor">
-								<h2>{editing ? "発表を編集" : "発表を登録"}</h2>
-								<form
-									key={editing?.id ?? "new"}
-									onSubmit={async (event) => {
-										event.preventDefault();
-										const form = event.currentTarget;
-										const values = new FormData(form);
-										const saved = await run(
-											{
-												action: "saveTalk",
-												revision: data.revision,
-												...(editing ? { id: editing.id } : {}),
-												title: String(values.get("title")),
-												speaker: String(values.get("speaker")),
-												durationSeconds: Number(values.get("durationSeconds")),
-												sortOrder: Number(values.get("sortOrder")),
-											},
-											key,
-										);
-										if (saved) {
-											form.reset();
-											setEditing(null);
-										}
-									}}
+								<h1>{current.title}</h1>
+								<div className="row">
+									<Initial talk={current} />
+									<strong>{current.speaker}</strong>
+								</div>
+							</div>
+							<div className="time-panel">
+								<Timer talk={current} now={now} />
+							</div>
+						</>
+					) : (
+						<p className="muted">
+							{data ? "発表の開始をお待ちください。" : "読み込み中…"}
+						</p>
+					)}
+				</section>
+				{data && data.talks.length > 0 && (
+					<section className="panel" aria-label="プログラム">
+						<h2>プログラム</h2>
+						<ol className="program">
+							{data.talks.map((talk, index) => (
+								<li
+									key={talk.id}
+									className={talk.id === current?.id ? "active" : talk.status}
+									aria-current={talk.id === current?.id ? "true" : undefined}
 								>
-									<label>
-										発表者名
-										<input
-											name="speaker"
-											required
-											maxLength={100}
-											defaultValue={editing?.speaker}
-										/>
-									</label>
-									<label className="title-field">
-										発表タイトル
-										<input
-											name="title"
-											required
-											maxLength={200}
-											defaultValue={editing?.title}
-										/>
-									</label>
-									<label>
-										持ち時間（秒）
-										<input
-											type="number"
-											name="durationSeconds"
-											min="1"
-											max="86400"
-											step="1"
-											required
-											defaultValue={editing?.durationSeconds ?? 300}
-										/>
-									</label>
-									<label>
-										発表順
-										<input
-											type="number"
-											name="sortOrder"
-											max="100000"
-											min="0"
-											step="1"
-											required
-											defaultValue={
-												editing?.sortOrder ??
-												(data.talks.length
-													? Math.max(
-															...data.talks.map((talk) => talk.sortOrder),
-														) + 1
-													: 1)
-											}
-										/>
-									</label>
-									<div className="form-actions">
-										<button type="submit" disabled={disabled}>
-											{editing ? "変更を保存" : "発表を追加"}
-										</button>
-										{editing && (
-											<button
-												className="secondary"
-												type="button"
-												onClick={() => setEditing(null)}
-											>
-												キャンセル
-											</button>
-										)}
-									</div>
-								</form>
-							</section>
-						)}
-					</div>
-				)}
-				{mode === "audience" && (
-					<footer>
-						発表の切り替えやタイマーは、運営の操作に合わせて更新されます。
-					</footer>
+									<span className="num">{pad(index + 1)}</span>
+									<span className="text">
+										<strong>{talk.speaker}</strong>
+										<small>{talk.title}</small>
+									</span>
+									{talk.id === current?.id ? (
+										<Status talk={talk} now={now} />
+									) : talk.id === next?.id ? (
+										<span className="badge blue">次</span>
+									) : talk.status === "ended" ? (
+										<span className="badge gray">終了</span>
+									) : (
+										<small className="muted">
+											{minutes(talk.durationSeconds)}
+										</small>
+									)}
+								</li>
+							))}
+						</ol>
+					</section>
 				)}
 			</div>
-		</WorkspaceShell>
+		</div>
+	);
+}
+
+function SpeakerView({ data, connected, now, current, next }: ViewProps) {
+	return (
+		<div className="app">
+			<SiteHeader name={data?.event?.name} page="発表者" />
+			<Connection connected={connected} hasData={Boolean(data)} />
+			<div className="page">
+				<div className="page-heading">
+					<div>
+						<h1>発表者の手元</h1>
+						<p className="muted">
+							持ち時間と進行状況を確認できます。タイマーは運営が操作します。
+						</p>
+					</div>
+				</div>
+				{current ? (
+					<section className="confidence" aria-label="現在の発表">
+						<Status talk={current} now={now} />
+						<h1>{current.title}</h1>
+						<div className="row">
+							<Initial talk={current} />
+							<strong>{current.speaker}</strong>
+						</div>
+						<Timer talk={current} now={now} />
+						{current.status === "pending" && (
+							<p className="timer-caption">運営の開始操作をお待ちください</p>
+						)}
+						{next && (
+							<p className="speaker-next">
+								次の発表　<strong>{next.speaker}</strong>　{next.title}
+							</p>
+						)}
+					</section>
+				) : (
+					<p className="muted">
+						発表が選ばれると、ここにタイマーが表示されます。
+					</p>
+				)}
+			</div>
+		</div>
+	);
+}
+
+function ScreenView({
+	data,
+	connected,
+	now,
+	current,
+	next,
+	position,
+}: ViewProps) {
+	const [joinUrl, setJoinUrl] = useState("");
+	useEffect(() => setJoinUrl(`${location.host}/live`), []);
+	return (
+		<main className="projection-root">
+			<Connection connected={connected} hasData={Boolean(data)} />
+			<div className="projection-top">
+				<strong>{data?.event?.name}</strong>
+			</div>
+			<section className="projection-main" aria-label="現在の発表">
+				{current ? (
+					<>
+						<div className="projection-slide">
+							<div className="eyebrow">LIGHTNING TALK · {position}</div>
+							<h1>{current.title}</h1>
+							<p>{current.speaker}</p>
+						</div>
+						<aside className="projection-side">
+							<Status talk={current} now={now} />
+							<Timer talk={current} now={now} />
+						</aside>
+					</>
+				) : (
+					<div className="projection-slide waiting">
+						<h1>まもなく開始します</h1>
+					</div>
+				)}
+			</section>
+			<footer className="projection-footer">
+				<div>
+					{next && (
+						<>
+							<small>次の発表</small>
+							<strong>{next.speaker}</strong>　{next.title}
+						</>
+					)}
+				</div>
+				<div>
+					<small>参加用ページ</small>
+					<span className="projection-url">{joinUrl}</span>
+				</div>
+			</footer>
+		</main>
+	);
+}
+
+function AdminView({
+	data,
+	connected,
+	error,
+	busy,
+	now,
+	run,
+	current,
+	next,
+}: ViewProps) {
+	const [authorized, setAuthorized] = useState<boolean | null>(null);
+	const [editing, setEditing] = useState<number | null>(null);
+	const [adding, setAdding] = useState(false);
+	useEffect(() => {
+		void run({ action: "authorize" }).then(
+			(ok) => ok !== undefined && setAuthorized(ok),
+		);
+	}, [run]);
+
+	if (authorized !== true)
+		return (
+			<div className="app">
+				<SiteHeader page="LT進行" />
+				<div className="page gate">
+					{authorized === null ? (
+						<p className="muted">確認中…</p>
+					) : (
+						<>
+							<h1>運営用リンクから開いてください</h1>
+							<p className="muted">
+								このページは運営者専用です。運営チームで共有している運営用リンクを開くと、そのまま操作できます。
+							</p>
+							<a href="/live">参加者向けの画面へ</a>
+						</>
+					)}
+				</div>
+			</div>
+		);
+
+	const active = data?.talks.find(
+		(talk) => talk.status === "running" || talk.status === "paused",
+	);
+	const disabled = busy || !connected;
+	const act = (action: TalkAction, talk: Talk, extra = {}) =>
+		data &&
+		run({
+			action,
+			revision: data.revision,
+			talkId: talk.id,
+			...extra,
+		} as LiveAction);
+	const live = current?.status === "running" || current?.status === "paused";
+
+	return (
+		<div className="app operator">
+			<SiteHeader name={data?.event?.name} page="LT進行">
+				<nav className="header-links" aria-label="表示画面を開く">
+					<a href="/live" target="_blank" rel="noreferrer">
+						参加者画面
+					</a>
+					<a href="/speaker" target="_blank" rel="noreferrer">
+						発表者画面
+					</a>
+					<a href="/screen" target="_blank" rel="noreferrer">
+						会場スクリーン
+					</a>
+				</nav>
+			</SiteHeader>
+			<Connection connected={connected} hasData={Boolean(data)} />
+			{error && (
+				<p className="notice error" role="alert">
+					<Icon name="error" />
+					<span>{error}</span>
+				</p>
+			)}
+			{data && !data.event && (
+				<div className="page gate">
+					<h1>イベントを作成</h1>
+					<form
+						className="stack"
+						onSubmit={(event) => {
+							event.preventDefault();
+							void run({
+								action: "createEvent",
+								name: String(new FormData(event.currentTarget).get("name")),
+							});
+						}}
+					>
+						<label>
+							イベント名
+							<input name="name" required maxLength={100} />
+						</label>
+						<button type="submit" className="primary" disabled={disabled}>
+							作成
+						</button>
+					</form>
+				</div>
+			)}
+			{data?.event && (
+				<div className="page operator-grid">
+					<aside aria-label="発表一覧">
+						<h3>発表一覧</h3>
+						<ol className="op-list">
+							{data.talks.map((talk, index) =>
+								editing === talk.id ? (
+									<li key={talk.id} className="op-edit">
+										<TalkForm
+											talk={talk}
+											disabled={disabled}
+											onCancel={() => setEditing(null)}
+											onSave={async (fields) => {
+												if (
+													await run({
+														action: "saveTalk",
+														revision: data.revision,
+														id: talk.id,
+														...fields,
+													})
+												)
+													setEditing(null);
+											}}
+										/>
+									</li>
+								) : (
+									<li
+										key={talk.id}
+										className={talk.id === current?.id ? "active" : talk.status}
+									>
+										<button
+											type="button"
+											className="op-talk"
+											aria-pressed={talk.id === current?.id}
+											title={active ? "発表中は切り替えできません" : undefined}
+											disabled={
+												disabled || Boolean(active) || talk.id === current?.id
+											}
+											onClick={() => act("select", talk)}
+										>
+											<span className="num">{pad(index + 1)}</span>
+											<span>
+												<strong>{talk.speaker}</strong>
+												<small>{talk.title}</small>
+												<small>
+													{talk.status === "pending"
+														? minutes(talk.durationSeconds)
+														: statusLabels[talk.status]}
+												</small>
+											</span>
+										</button>
+										<span className="op-tools">
+											<IconButton
+												label={`「${talk.title}」を上へ`}
+												icon="keyboard_arrow_up"
+												disabled={disabled || index === 0}
+												onClick={() => act("move", talk, { direction: "up" })}
+											/>
+											<IconButton
+												label={`「${talk.title}」を下へ`}
+												icon="keyboard_arrow_down"
+												disabled={disabled || index === data.talks.length - 1}
+												onClick={() => act("move", talk, { direction: "down" })}
+											/>
+											{talk.status === "pending" && (
+												<>
+													<IconButton
+														label={`「${talk.title}」を編集`}
+														icon="edit"
+														disabled={disabled}
+														onClick={() => setEditing(talk.id)}
+													/>
+													<IconButton
+														label={`「${talk.title}」を削除`}
+														icon="delete"
+														disabled={disabled}
+														onClick={() => {
+															if (confirm(`「${talk.title}」を削除しますか？`))
+																act("deleteTalk", talk);
+														}}
+													/>
+												</>
+											)}
+										</span>
+									</li>
+								),
+							)}
+						</ol>
+						<details
+							className="add"
+							open={adding || !data.talks.length}
+							onToggle={(event) => setAdding(event.currentTarget.open)}
+						>
+							<summary>
+								<Icon name="add" />
+								発表を追加
+							</summary>
+							<TalkForm
+								disabled={disabled}
+								onSave={async (fields, form) => {
+									if (
+										await run({
+											action: "saveTalk",
+											revision: data.revision,
+											...fields,
+										})
+									) {
+										setAdding(true);
+										form.reset();
+										form.querySelector("input")?.focus();
+									}
+								}}
+							/>
+						</details>
+						<p className="step-help">
+							「次の発表へ」で終了と選択を行い、準備後に開始します。
+						</p>
+					</aside>
+
+					<section className="op-current" aria-label="現在の発表">
+						{current ? (
+							<>
+								<div className="row between">
+									<span className="eyebrow">現在の発表</span>
+									<Status talk={current} now={now} />
+								</div>
+								<h1>{current.title}</h1>
+								<div className="row">
+									<Initial talk={current} />
+									<strong>{current.speaker}</strong>
+								</div>
+								<div className="op-timer">
+									<Timer talk={current} now={now} />
+								</div>
+								<div className="op-actions">
+									<button
+										type="button"
+										className="secondary"
+										disabled={disabled || !live}
+										onClick={() =>
+											act(
+												current.status === "paused" ? "resume" : "pause",
+												current,
+											)
+										}
+									>
+										<Icon
+											name={
+												current.status === "paused" ? "play_arrow" : "pause"
+											}
+										/>
+										{current.status === "paused" ? "再開" : "一時停止"}
+									</button>
+									<button
+										type="button"
+										className="danger"
+										disabled={disabled || !live}
+										onClick={() => act("end", current)}
+									>
+										<Icon name="stop" />
+										発表を終了
+									</button>
+								</div>
+								<div className="next-section">
+									{current.status === "pending" ? (
+										<>
+											<h3>準備が整ったら開始</h3>
+											<p className="small muted">
+												発表者の準備ができたら、タイマーを開始します。
+											</p>
+											<button
+												type="button"
+												className="primary full"
+												disabled={disabled}
+												onClick={() => act("start", current)}
+											>
+												<Icon name="play_arrow" />
+												タイマー開始
+											</button>
+										</>
+									) : (
+										<>
+											<h3>次の登壇者へ</h3>
+											<p className="small muted">
+												{next
+													? `現在の発表を終了し、${next.speaker}さんを開始待ちにします。`
+													: "これが最後の発表です。"}
+											</p>
+											<button
+												type="button"
+												className="primary full"
+												disabled={disabled || !next}
+												onClick={() => act("next", current)}
+											>
+												<Icon name="arrow_forward" />
+												次の発表へ
+											</button>
+											<button
+												type="button"
+												className="text-button"
+												disabled={disabled}
+												onClick={() => {
+													if (
+														confirm(
+															`「${current.title}」のタイマーを開始前に戻しますか？`,
+														)
+													)
+														act("reset", current);
+												}}
+											>
+												タイマーを開始前に戻す
+											</button>
+										</>
+									)}
+								</div>
+							</>
+						) : (
+							<p className="muted">
+								{data.talks.length
+									? "発表一覧から発表を選んでください。"
+									: "「発表を追加」から発表を登録してください。"}
+							</p>
+						)}
+					</section>
+
+					<aside className="next-source" aria-label="次の発表">
+						<span className="eyebrow">次の発表者</span>
+						{next ? (
+							<>
+								<div className="row">
+									<Initial talk={next} />
+									<h3>
+										{next.speaker}
+										<span>{next.title}</span>
+									</h3>
+								</div>
+								<p className="small muted">
+									持ち時間 {minutes(next.durationSeconds)}
+								</p>
+							</>
+						) : (
+							<p className="small muted">次の発表はありません。</p>
+						)}
+					</aside>
+				</div>
+			)}
+		</div>
+	);
+}
+
+function IconButton({
+	label,
+	icon,
+	...props
+}: {
+	label: string;
+	icon: string;
+	disabled: boolean;
+	onClick: () => void;
+}) {
+	return (
+		<button
+			type="button"
+			className="icon-button"
+			aria-label={label}
+			title={label}
+			{...props}
+		>
+			<Icon name={icon} />
+		</button>
+	);
+}
+
+function TalkForm({
+	talk,
+	disabled,
+	onSave,
+	onCancel,
+}: {
+	talk?: Talk;
+	disabled: boolean;
+	onSave: (
+		fields: { title: string; speaker: string; durationSeconds: number },
+		form: HTMLFormElement,
+	) => Promise<void>;
+	onCancel?: () => void;
+}) {
+	return (
+		<form
+			className="talk-form"
+			onSubmit={(event) => {
+				event.preventDefault();
+				const form = event.currentTarget;
+				const values = new FormData(form);
+				const durationSeconds = parseDuration(String(values.get("duration")));
+				if (!durationSeconds) return;
+				void onSave(
+					{
+						title: String(values.get("title")),
+						speaker: String(values.get("speaker")),
+						durationSeconds,
+					},
+					form,
+				);
+			}}
+		>
+			<label className="wide">
+				タイトル
+				<input
+					name="title"
+					required
+					maxLength={200}
+					defaultValue={talk?.title}
+				/>
+			</label>
+			<label>
+				発表者
+				<input
+					name="speaker"
+					required
+					maxLength={100}
+					defaultValue={talk?.speaker}
+				/>
+			</label>
+			<label>
+				持ち時間
+				<input
+					name="duration"
+					required
+					pattern="\d{1,3}(:[0-5]?\d)?"
+					title="分、または 分:秒（例：5、3:30）"
+					defaultValue={
+						talk
+							? formatTime(talk.durationSeconds).replace(/^0(?=\d:)/, "")
+							: "5:00"
+					}
+				/>
+			</label>
+			<span className="form-actions">
+				<button type="submit" className="primary" disabled={disabled}>
+					{talk ? "保存" : "追加"}
+				</button>
+				{onCancel && (
+					<button type="button" className="secondary" onClick={onCancel}>
+						キャンセル
+					</button>
+				)}
+			</span>
+		</form>
 	);
 }
