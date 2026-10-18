@@ -19,7 +19,7 @@ export type WorkspaceSection =
 	| "admin"
 	| "guide-admin"
 	| "comments"
-	| "engagement"
+	| "screen"
 	| "qr"
 	| "guide"
 	| "participants";
@@ -30,7 +30,6 @@ export function WorkspaceShell({
 	eventId = 1,
 	name,
 	identity,
-	bare = false,
 	registrationOnly = false,
 }: {
 	children: React.ReactNode;
@@ -38,14 +37,12 @@ export function WorkspaceShell({
 	eventId?: string | number;
 	name?: string;
 	identity?: string;
-	bare?: boolean;
 	registrationOnly?: boolean;
 }) {
-	if (bare) return children;
 	const eventPath = `/events/${encodeURIComponent(eventId)}`;
 	const active = ["registration", "connect", "qr"].includes(section)
 		? "dashboard"
-		: section === "engagement"
+		: section === "screen"
 			? "live"
 			: section;
 	const navigation = [
@@ -54,7 +51,7 @@ export function WorkspaceShell({
 		{
 			id: "live",
 			label: "LTライブ",
-			href: `/engagement?eventId=${encodeURIComponent(eventId)}`,
+			href: "/screen",
 			icon: MessageCircle,
 		},
 		{

@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-// Short URL shown on the venue screen.
+// Short URL for the participant LT live page.
 export const Route = createFileRoute("/live")({
 	beforeLoad: () => {
-		throw redirect({ to: "/engagement", search: { eventId: 1 } });
+		throw redirect({ to: "/screen" });
 	},
 });

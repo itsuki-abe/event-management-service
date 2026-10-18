@@ -256,10 +256,7 @@ export function Dashboard() {
 								</small>
 							</div>
 						</div>
-						<a
-							className="wc-button wc-primary wc-full"
-							href={`/engagement?eventId=${live?.event?.id ?? 1}`}
-						>
+						<a className="wc-button wc-primary wc-full" href="/screen">
 							ライブに参加
 							<ArrowRight size={21} aria-hidden="true" />
 						</a>

@@ -509,10 +509,7 @@ export function ParticipationPage({
 					</p>
 					{!desktop && (
 						<div className="button-row">
-							<a
-								className="button"
-								href={`/engagement?eventId=${encodeURIComponent(eventId)}`}
-							>
+							<a className="button" href="/screen">
 								LTライブへ
 							</a>
 							<a className="button secondary" href={`/events/${eventId}/guide`}>

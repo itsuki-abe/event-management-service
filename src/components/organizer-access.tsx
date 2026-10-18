@@ -13,7 +13,7 @@ export function OrganizerAccess({
 					<p>
 						運営チームで共有している運営用リンクから入ると、LT進行・コメント・会場案内を同じ運営メニューから管理できます。
 					</p>
-					<a href="/engagement">LTライブへ戻る</a>
+					<a href="/screen">LTライブへ戻る</a>
 				</>
 			)}
 		</section>

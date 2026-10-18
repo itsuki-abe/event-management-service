@@ -59,7 +59,7 @@ async function addTalk(page, title, speaker, duration) {
 	if (!(await form.evaluate((details) => details.open)))
 		await form.locator("summary").click();
 	await form.getByLabel("タイトル", { exact: true }).fill(title);
-	await form.getByLabel("発表者", { exact: true }).selectOption({
+	await form.locator("select[name=speakerId]").selectOption({
 		label: speaker,
 	});
 	await form.getByLabel("持ち時間", { exact: true }).fill(duration);
@@ -155,13 +155,15 @@ try {
 	});
 	const adminContext = await browser.newContext({ baseURL });
 	const viewerContext = await browser.newContext({ baseURL });
+	adminContext.setDefaultTimeout(15_000);
+	viewerContext.setDefaultTimeout(15_000);
 	const admin = await adminContext.newPage();
 	const viewers = await Promise.all(
 		["/live", "/screen", "/speaker"].map(async (path) => {
 			const page = await viewerContext.newPage();
 			page.on("pageerror", (error) => errors.push(error.message));
 			await page.goto(path);
-			await expect(page.locator(".connection")).toHaveCount(0);
+			await expect(page.locator(".lt-app .connection")).toHaveCount(0);
 			return page;
 		}),
 	);
@@ -175,8 +177,8 @@ try {
 		name: "メインメニュー",
 		exact: true,
 	});
-	await expect(menu).toHaveCount(0);
-	await admin.goto("/engagement");
+	await expect(menu).toBeVisible();
+	await admin.goto("/screen");
 	await expect(
 		menu.getByRole("link", { name: "LTライブ", exact: true }),
 	).toBeVisible();
@@ -284,6 +286,82 @@ try {
 		).toBeVisible();
 		await expect(time(page)).toHaveText("05:00");
 	}
+	// Follow the LT tab into the shared screen, then react and comment without leaving.
+	await viewers[0]
+		.getByRole("navigation", { name: "LTライブの表示" })
+		.getByRole("link", { name: "画面共有・リアクション", exact: true })
+		.click();
+	await expect(viewers[0]).toHaveURL(`${baseURL}/screen`);
+	await viewers[0].goto("/live");
+	const screen = viewers[1];
+	const speaker = viewers[2];
+	await speaker.addInitScript(() => {
+		navigator.mediaDevices.getDisplayMedia = async () => {
+			const canvas = document.createElement("canvas");
+			canvas.width = 1280;
+			canvas.height = 720;
+			const context = canvas.getContext("2d");
+			const paint = () => {
+				context.fillStyle = "#204a88";
+				context.fillRect(0, 0, 1280, 720);
+				context.fillStyle = "white";
+				context.font = "64px sans-serif";
+				context.fillText("Screen sharing QA", 100, 360);
+			};
+			paint();
+			setInterval(paint, 100);
+			return canvas.captureStream(10);
+		};
+	});
+	await speaker.reload();
+	await speaker.getByRole("button", { name: "画面共有を準備する" }).click();
+	const video = screen.getByLabel("発表者の画面", { exact: true });
+	await expect(video).toBeVisible({ timeout: 30_000 });
+	await expect
+		.poll(() => video.evaluate((element) => element.videoWidth))
+		.toBe(1280);
+	await screen
+		.getByRole("button", { name: "拍手を送る 0件", exact: true })
+		.click();
+	await expect(
+		screen.getByRole("button", { name: "拍手を送る 1件", exact: true }),
+	).toBeVisible();
+	await screen
+		.getByPlaceholder("感想や質問を書いてみよう")
+		.fill("画面を見ながら質問します");
+	await screen.getByRole("button", { name: "送信する", exact: true }).click();
+	await screen.getByLabel("表示名", { exact: true }).fill("視聴者");
+	await screen
+		.getByRole("button", { name: "この名前で送信", exact: true })
+		.click();
+	await expect(
+		screen.locator(".comment-text").getByText("画面を見ながら質問します"),
+	).toBeVisible();
+	for (const width of [1440, 390]) {
+		await screen.setViewportSize({ width, height: 900 });
+		await screen
+			.getByPlaceholder("感想や質問を書いてみよう")
+			.scrollIntoViewIfNeeded();
+		await screen.getByPlaceholder("感想や質問を書いてみよう").focus();
+		await expect(video).toBeInViewport({ ratio: 1 });
+		assert.ok(
+			await screen.evaluate(
+				() => document.documentElement.scrollWidth <= innerWidth,
+			),
+		);
+		await screen.screenshot({
+			path: join(root, `output/playwright/screen-${width}.png`),
+			fullPage: false,
+		});
+	}
+	await screen.setViewportSize({ width: 1280, height: 900 });
+	await speaker
+		.getByRole("button", { name: "共有を停止する", exact: true })
+		.click();
+	await expect(
+		screen.getByText("画面共有が切断されました", { exact: true }),
+	).toBeVisible();
+
 	await admin
 		.getByRole("button", { name: "タイマー開始", exact: true })
 		.click();
@@ -300,7 +378,8 @@ try {
 	await admin.getByRole("button", { name: "再開", exact: true }).click();
 	await expect(time(admin)).not.toHaveText(pausedTime);
 	await admin.getByRole("button", { name: "発表を終了", exact: true }).click();
-	for (const page of [admin, ...viewers]) await status(page, "終了");
+	for (const page of [admin, ...viewers.slice(0, 2)])
+		await status(page, "終了");
 	await admin.getByRole("button", { name: "次の発表へ", exact: true }).click();
 	for (const page of [admin, ...viewers]) {
 		await expect(
@@ -325,8 +404,8 @@ try {
 	).toBeVisible();
 	await viewerContext.setOffline(false);
 	for (const page of viewers)
-		await expect(page.locator(".connection")).toHaveCount(0);
-	for (const page of viewers.slice(0, 2)) {
+		await expect(page.locator(".lt-app .connection")).toHaveCount(0);
+	for (const page of viewers.slice(0, 1)) {
 		await expect(page.getByRole("button")).toHaveCount(0);
 	}
 	for (const page of [admin, ...viewers]) {
@@ -441,7 +520,7 @@ try {
 	);
 	assert.deepEqual(errors, [], "No unhandled browser errors are allowed.");
 	console.info(
-		"Browser QA passed: organizer access, comment management, first-run event and talks, four-screen timer sync, reconnect, mobile layouts, registration/X profile, registered home and event enrollment QR.",
+		"Browser QA passed: organizer access, comment management, first-run event and talks, shared-screen reactions/comments and mobile visibility, four-screen timer sync, reconnect, mobile layouts, registration/X profile, registered home and event enrollment QR.",
 	);
 } catch (error) {
 	console.error(error instanceof Error ? error.message : error);

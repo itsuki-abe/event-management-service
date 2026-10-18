@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+	type ReactNode,
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
 import { OrganizerAccess } from "../../components/organizer-access";
 import { SpeakerAvatar } from "../../components/speaker-avatar";
 import { WorkspaceShell } from "../../components/workspace";
@@ -76,9 +82,11 @@ function useSnapshot(
 export function EngagementPage({
 	eventId,
 	admin = false,
+	stage,
 }: {
 	eventId: number;
 	admin?: boolean;
+	stage?: ReactNode;
 }) {
 	const [viewTalkId, setViewTalkId] = useState<number | null>(null);
 	const [authorized, setAuthorized] = useState<boolean | null>(null);
@@ -291,12 +299,12 @@ export function EngagementPage({
 	);
 	return (
 		<WorkspaceShell
-			section={admin ? "comments" : "engagement"}
+			section={admin ? "comments" : "screen"}
 			eventId={eventId}
 			name={data?.event.title}
 			identity={session?.participant?.nickname}
 		>
-			<div className={`commons-app ${admin ? "operator" : ""}`}>
+			<div className={`commons-app ${admin ? "operator" : "screen-view"}`}>
 				<div className="page">
 					{admin && authorized !== true ? (
 						<OrganizerAccess authorized={authorized} />
@@ -360,7 +368,8 @@ export function EngagementPage({
 										</label>
 									)}
 									<div className="live-layout">
-										<section className="live-details">
+										{stage}
+										<section className="live-details" aria-label="現在の発表">
 											{talk ? (
 												<>
 													<div className="live-title">
