@@ -27,7 +27,9 @@ async function request(method, payload, { admin = false, status = 200 } = {}) {
 		},
 		body: JSON.stringify({ eventId: 1, ...payload }),
 	});
-	const setCookie = response.headers.get("set-cookie");
+	const setCookie = response.headers
+		.getSetCookie()
+		.find((value) => value.startsWith("engagement_1="));
 	if (setCookie) cookie = setCookie.split(";")[0];
 	const result = await response.json();
 	assert.equal(response.status, status, JSON.stringify(result));
