@@ -44,7 +44,7 @@ DevDay 2026発表機能との厳密な対応は、このリポジトリの資料
 | PC接続は登録済みスマホで明示確認 | URLを開いただけで接続されず、本人が接続先を確認できる | [接続処理](src/server/participation.ts) |
 | 「次の発表へ」で自動開始しない・開始前へ戻せる | 準備時間と発表時間を分け、誤操作を修正できる | [LT操作](src/server/lt.ts)、[運営UI](src/components/lt.tsx) |
 | 発表が切り替わっても下書きの対象を維持 | 書いていた質問を意図しない発表に送ることを避ける | [交流UI](src/features/engagement/EngagementPage.tsx) |
-| 通信失敗時の再接続・コメント入力保持 | 再読込や送信失敗から戻れる | [LT画面](src/components/lt.tsx)、[交流UI](src/features/engagement/EngagementPage.tsx) |
+| 通信失敗時の再接続・コメント入力保持 | LTは再読込後に共有状態を取得し、コメントは送信失敗時に入力を保持 | [LT画面](src/components/lt.tsx)、[交流UI](src/features/engagement/EngagementPage.tsx) |
 
 書体・アイコンはローカル配信し、ホーム・会場案内・ライブ・運営で共通のナビゲーションとデザインを使っています。[共通シェル](src/components/workspace.tsx)、[共通スタイル](src/workspace.css)から確認できます。
 
