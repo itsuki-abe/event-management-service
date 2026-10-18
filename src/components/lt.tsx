@@ -7,7 +7,6 @@ import {
 	Hand,
 	Lightbulb,
 	type LucideIcon,
-	MonitorUp,
 	Pause,
 	Pencil,
 	Play,
@@ -403,8 +402,8 @@ function SpeakerView({ data, connected, now, current }: ViewProps) {
 	);
 	const talk = mine?.find((item) => item.status !== "ended") ?? mine?.at(-1);
 	const reactions = useReactions(data?.event?.id, talk?.id);
-	const projecting =
-		share.stream !== null && data?.projectedSessionId === share.sessionId;
+	// The selected talk's speaker is shown on the venue screen automatically.
+	const projecting = share.stream !== null && talk?.id === current?.id;
 	return (
 		<>
 			<div className="wc-page-heading">
@@ -513,7 +512,7 @@ function SpeakerView({ data, connected, now, current }: ViewProps) {
 							<>
 								{!projecting && (
 									<p className="small muted">
-										準備できました。運営が投影先を選ぶまでお待ちください。
+										準備できました。自分の発表の順番になると、会場に映ります。
 									</p>
 								)}
 								<button
@@ -540,8 +539,8 @@ function SpeakerView({ data, connected, now, current }: ViewProps) {
 							<h3>発表までの流れ</h3>
 							{[
 								"本人が共有する画面を選ぶ",
-								"運営がプレビューを確認し、投影する",
-								"準備後に運営がタイマーを開始",
+								"自分の発表の順番になると、会場に映る",
+								"運営がタイマーを開始",
 							].map((step, index) => (
 								<div key={step} className="row">
 									<span className="step-num">{index + 1}</span>
@@ -569,15 +568,17 @@ function ScreenView({
 }: ViewProps) {
 	const [joinUrl, setJoinUrl] = useState("");
 	useEffect(() => setJoinUrl(`${location.host}/live`), []);
-	const projected = data?.shares.find(
-		(share) => share.sessionId === data.projectedSessionId,
+	// Shows the selected talk's speaker's share, newest first.
+	const shares = data?.shares.filter(
+		(share) => share.participantId === current?.speakerId,
 	);
-	const stream = useShareViewer(projected);
+	const onStage = shares?.find((share) => share.live) ?? shares?.[0];
+	const stream = useShareViewer(onStage);
 	const offline =
 		current &&
-		current.status !== "ended" &&
-		projected?.participantId === current.speakerId &&
-		!projected.live;
+		(current.status === "running" || current.status === "paused") &&
+		onStage &&
+		!onStage.live;
 	if (offline)
 		return (
 			<main className="projection-root">
@@ -605,6 +606,20 @@ function ScreenView({
 				</footer>
 			</main>
 		);
+	// While a speaker shares, their screen fills the projector; the timer stays
+	// in a corner.
+	if (stream)
+		return (
+			<main className="projection-root sharing">
+				<ShareVideo stream={stream} label="発表者の画面" />
+				{current && (
+					<aside className="projection-overlay" aria-label="現在の発表">
+						<Status talk={current} now={now} />
+						<Timer talk={current} now={now} />
+					</aside>
+				)}
+			</main>
+		);
 	return (
 		<main className="projection-root">
 			<Connection connected={connected} hasData={Boolean(data)} />
@@ -614,17 +629,11 @@ function ScreenView({
 			<section className="projection-main" aria-label="現在の発表">
 				{current ? (
 					<>
-						{stream ? (
-							<div className="projection-slide sharing">
-								<ShareVideo stream={stream} label="発表者の画面" />
-							</div>
-						) : (
-							<div className="projection-slide">
-								<div className="eyebrow">LIGHTNING TALK · {position}</div>
-								<h1>{current.title}</h1>
-								<p>{current.speaker}</p>
-							</div>
-						)}
+						<div className="projection-slide">
+							<div className="eyebrow">LIGHTNING TALK · {position}</div>
+							<h1>{current.title}</h1>
+							<p>{current.speaker}</p>
+						</div>
 						<aside className="projection-side">
 							<Status talk={current} now={now} />
 							<Timer talk={current} now={now} />
@@ -635,10 +644,6 @@ function ScreenView({
 							</p>
 						</aside>
 					</>
-				) : stream ? (
-					<div className="projection-slide sharing waiting">
-						<ShareVideo stream={stream} label="発表者の画面" />
-					</div>
 				) : (
 					<div className="projection-slide waiting">
 						<h1>まもなく開始します</h1>
@@ -697,17 +702,7 @@ function AdminView({
 			...extra,
 		} as LiveAction);
 	const live = current?.status === "running" || current?.status === "paused";
-	// Keep offering the current speaker's share until it is on the venue screen.
-	const currentShare = data?.shares.find(
-		(share) => share.participantId === current?.speakerId && share.live,
-	);
-	const sourceTalk =
-		current?.status === "pending" ||
-		(live &&
-			currentShare &&
-			currentShare.sessionId !== data?.projectedSessionId)
-			? current
-			: next;
+	const sourceTalk = current?.status === "pending" ? current : next;
 
 	return (
 		<>
@@ -920,7 +915,7 @@ function AdminView({
 										<>
 											<h3>準備が整ったら開始</h3>
 											<p className="small muted">
-												投影する共有を確認して、タイマーを開始します。
+												発表者の画面が会場に映ったら、タイマーを開始します。
 											</p>
 											<button
 												type="button"
@@ -981,8 +976,6 @@ function AdminView({
 						data={data}
 						talk={sourceTalk}
 						standby={sourceTalk === current}
-						disabled={disabled}
-						run={run}
 					/>
 				</div>
 			)}
@@ -994,24 +987,20 @@ function ShareSource({
 	data,
 	talk,
 	standby,
-	disabled,
-	run,
 }: {
 	data: LiveSnapshot;
 	talk: Talk | undefined;
 	standby: boolean;
-	disabled: boolean;
-	run: ViewProps["run"];
 }) {
 	const share = data.shares.find(
 		(item) => item.participantId === talk?.speakerId && item.live,
 	);
 	const stream = useShareViewer(share);
-	const projecting = share && share.sessionId === data.projectedSessionId;
+	const onStage = standby && Boolean(share);
 	return (
 		<aside className="next-source" aria-label="発表者の共有">
 			<span className="eyebrow">
-				{standby ? "選択中の共有" : "次の発表者の準備"}
+				{standby ? "選択中の発表者の共有" : "次の発表者の準備"}
 			</span>
 			{talk ? (
 				<>
@@ -1031,28 +1020,12 @@ function ShareSource({
 						)}
 					</div>
 					{share && (
-						<span className={`badge ${projecting ? "blue" : "green"}`}>
-							{projecting ? "投影中" : "共有準備完了"}
+						<span className={`badge ${onStage ? "blue" : "green"}`}>
+							{onStage ? "投影中" : "共有準備完了"}
 						</span>
 					)}
-					<button
-						type="button"
-						className="secondary full"
-						disabled={disabled || !share || projecting}
-						onClick={() =>
-							share &&
-							run({
-								action: "project",
-								revision: data.revision,
-								sessionId: share.sessionId,
-							})
-						}
-					>
-						<Icon icon={MonitorUp} size={18} />
-						{projecting ? "投影先を確認済み" : "この共有を投影する"}
-					</button>
 					<p className="step-help">
-						本人が準備した共有を運営が選びます。投影とタイマー開始は別の操作です。
+						発表を選ぶと、その発表者の共有が会場スクリーンに自動で映ります。
 					</p>
 				</>
 			) : (

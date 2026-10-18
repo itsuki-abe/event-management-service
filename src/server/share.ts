@@ -84,13 +84,15 @@ export async function postShare(request: Request) {
 			if (!row) return fail("接続をやり直してください。", 404);
 			return json({ answer: row.answer });
 		}
-		const projected = await env.DB.prepare(
-			"SELECT 1 FROM event_live_state WHERE event_id = ? AND projected_session_id = ?",
-		)
+		// The current speaker's share is on the venue screen anyway; previews of
+		// other shares are organizer-only.
+		const onStage = await env.DB.prepare(`SELECT 1 FROM event_live_state l
+			JOIN talks t ON t.id = l.selected_talk_id
+			JOIN device_sessions d ON d.participant_id = t.speaker_id
+			WHERE l.event_id = ? AND d.id = ?`)
 			.bind(event.id, action.sessionId)
 			.first();
-		// The projected share is public anyway; previews of others are organizer-only.
-		if (!projected && !isOrganizer(request))
+		if (!onStage && !isOrganizer(request))
 			return fail("運営用リンクから開き直してください。", 401);
 		const id = crypto.randomUUID();
 		const [, inserted] = await env.DB.batch([

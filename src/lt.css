@@ -672,9 +672,42 @@
 		font-size: clamp(14px, 1.2vw, 24px);
 		margin-top: 1.2vh;
 	}
-	.projection-slide.sharing {
+	.projection-root.sharing {
+		position: relative;
+		height: 100dvh;
 		padding: 0;
-		background: var(--ink);
+		background: #000;
+	}
+	.projection-root.sharing .share-video {
+		position: absolute;
+		inset: 0;
+	}
+	.projection-overlay {
+		position: absolute;
+		right: 1.5vw;
+		bottom: 2vh;
+		display: flex;
+		align-items: center;
+		gap: 1vw;
+		padding: 0.8vh 1.2vw;
+		border-radius: 12px;
+		background: rgb(32 42 52 / 0.82);
+		color: #fff;
+	}
+	.projection-overlay .time {
+		display: flex;
+		flex-direction: column-reverse;
+	}
+	.projection-overlay .timer {
+		font-size: clamp(28px, 3vw, 60px);
+		color: var(--yellow);
+	}
+	.projection-overlay .time.over .timer {
+		color: var(--apricot);
+	}
+	.projection-overlay .timer-caption {
+		color: #fff;
+		font-size: clamp(11px, 0.8vw, 16px);
 	}
 	.projection-hint {
 		font-size: clamp(14px, 1.1vw, 22px);
@@ -730,6 +763,7 @@
 		font-weight: 900;
 	}
 	.projection-url {
+		overflow-wrap: anywhere;
 		font-size: 1.1em;
 		letter-spacing: 0.03em;
 	}

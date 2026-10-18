@@ -85,7 +85,9 @@ export function useSharePublisher(eventId: number | undefined) {
 			media = await navigator.mediaDevices.getDisplayMedia({
 				video: { frameRate: 30 },
 				audio: false,
-			});
+				// Sharing this tab would only mirror the presenter page itself.
+				selfBrowserSurface: "exclude",
+			} as DisplayMediaStreamOptions);
 		} catch (cause) {
 			if (!(cause instanceof DOMException && cause.name === "NotAllowedError"))
 				setError("このブラウザーでは画面共有を開始できませんでした。");

@@ -18,7 +18,6 @@ export const liveSnapshotSchema = z.object({
 		.nullable(),
 	talks: z.array(talkSchema),
 	selectedTalkId: z.number().int().positive().nullable(),
-	projectedSessionId: z.number().int().positive().nullable(),
 	shares: z.array(
 		z.object({
 			sessionId: z.number().int().positive(),
@@ -65,11 +64,6 @@ export const liveActionSchema = z.discriminatedUnion("action", [
 	z.object({ action: z.literal("end"), revision, talkId }),
 	z.object({ action: z.literal("next"), revision, talkId }),
 	z.object({ action: z.literal("reset"), revision, talkId }),
-	z.object({
-		action: z.literal("project"),
-		revision,
-		sessionId: z.number().int().positive(),
-	}),
 ]);
 
 const sdp = z.string().min(1).max(20000);

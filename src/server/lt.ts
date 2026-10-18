@@ -36,8 +36,7 @@ export async function readSnapshot(organizer = false) {
 			JOIN participants p ON p.id = t.speaker_id AND p.event_id = t.event_id
 			WHERE t.event_id = (SELECT id FROM events ORDER BY id LIMIT 1)
 			ORDER BY t.sort_order, t.id`),
-		env.DB.prepare(`SELECT selected_talk_id AS selectedTalkId, projected_session_id AS projectedSessionId,
-			revision FROM event_live_state
+		env.DB.prepare(`SELECT selected_talk_id AS selectedTalkId, revision FROM event_live_state
 			WHERE event_id = (SELECT id FROM events ORDER BY id LIMIT 1)`),
 		env.DB.prepare(`SELECT s.session_id AS sessionId, d.participant_id AS participantId,
 			s.started_at AS startedAt, s.heartbeat_at > ? AS live FROM screen_shares s
@@ -53,13 +52,11 @@ export async function readSnapshot(organizer = false) {
 	const state = z
 		.object({
 			selectedTalkId: z.number().nullable(),
-			projectedSessionId: z.number().nullable(),
 			revision: z.string(),
 		})
 		.parse(
 			states.results[0] ?? {
 				selectedTalkId: null,
-				projectedSessionId: null,
 				revision: "0",
 			},
 		);
@@ -67,7 +64,6 @@ export async function readSnapshot(organizer = false) {
 		event: events.results[0] ?? null,
 		talks: talks.results,
 		selectedTalkId: state.selectedTalkId,
-		projectedSessionId: state.projectedSessionId,
 		shares: shares.results.map((share) => ({
 			...share,
 			live: Boolean(share.live),
@@ -159,20 +155,6 @@ async function applyAction(action: LiveAction) {
 				),
 			);
 		}
-	} else if (action.action === "project") {
-		if (
-			!snapshot.shares.some(
-				(share) => share.sessionId === action.sessionId && share.live,
-			)
-		)
-			throw new LiveError("この共有は切断されています。", 409);
-		mutations.push(
-			statement(
-				`UPDATE event_live_state SET projected_session_id = ? WHERE event_id = ? AND ${guard}`,
-				action.sessionId,
-				eventId,
-			),
-		);
 	} else {
 		const talk = snapshot.talks.find((item) => item.id === action.talkId);
 		if (!talk) throw new LiveError("発表が見つかりません。", 404);
