@@ -141,7 +141,7 @@ bun run test:browser
 
 Sitesの公開先は `.openai/hosting.json` に記録します。`bun run build:sites` は既存のTanStack Start Worker・静的アセットに加え、Sites用の設定と `drizzle/` のマイグレーションを `dist/.openai/` に同梱し、Cloudflareがローカルプレビュー用に出力したシークレットを取り除きます。Sitesが `DB` のD1を作成し、公開時にマイグレーションを適用します。ローカルのDB・サンプルデータは公開先へコピーしません。
 
-本番の運営操作にはSitesの環境変数で `ORGANIZER_KEY` と `ENGAGEMENT_ADMIN_TOKEN` をシークレットとして設定します。新規Sitesは所有者限定で、共有範囲はSites側で管理します。
+本番の運営操作にはSitesの環境変数で `ORGANIZER_KEY` をシークレットとして設定します。新規Sitesは所有者限定で、共有範囲はSites側で管理します。
 
 ### Cloudflareへ直接公開する
 
@@ -180,10 +180,10 @@ bun run db:seed:engagement
 cp .dev.vars.example .dev.vars
 ```
 
-`.dev.vars` の `ENGAGEMENT_ADMIN_TOKEN` を十分に長いランダムな値に変更してから `bun run dev` で起動します。既存の `.dev.vars` は上書きしないでください。参加者の閲覧・投稿にはキーは不要です。運営用キーは端末ペアリング・運営セッション統合までの暫定認証で、API側で検証します。キー未設定なら運営操作は拒否します。本番で利用する場合は `wrangler secret put ENGAGEMENT_ADMIN_TOKEN` で設定し、参加者に公開しないでください。
+`.dev.vars` の `ORGANIZER_KEY` を十分に長いランダムな値に変更してから `bun run dev` で起動します。既存の `.dev.vars` は上書きしないでください。参加者の閲覧・投稿にはキーは不要です。LT進行とコメント管理は共通の運営用リンク・Cookieで認証します。キー未設定なら運営操作は拒否します。本番で利用する場合は `wrangler secret put ORGANIZER_KEY` で設定し、参加者に公開しないでください。
 
 - `/engagement?eventId=1`：交流用LTライブ。`event_live_state.selected_talk_id` の発表を表示し、初回コメント送信時に表示名を入力します。
-- `/admin/comments?eventId=1`：交流の運営用キーで接続。発表別のコメント・集計、受付停止／再開、非表示、投影許可の切り替え。
+- `/admin/comments?eventId=1`：運営用リンクでログイン後、共通の運営メニューから移動。発表別のコメント・集計、受付停止／再開、非表示、投影許可の切り替え。
 - サンプルはイベント1・発表1と2。再投入は既存データ・現在の進行状態を上書きしません。既存のIDと重なるDBでは、イベント／登壇者の関係を確認してから投入してください。
 
 ### APIと他領域との接続
@@ -197,17 +197,17 @@ cp .dev.vars.example .dev.vars
 
 初回送信で `participants` と `device_sessions` を作り、24時間のHttpOnly Cookieを返します。セッショントークンはSHA-256ハッシュのみをDBへ保存します。リアクションは同じ参加者が毎秒最大1回送信でき、重複を許容して送信数を数えます。Cookieの削除による制限回避を防ぐ仕組みではありません。
 
-`PATCH /api/engagement` は `Authorization: Bearer <運営用キー>` が必要です。
+`PATCH /api/engagement` は運営用リンクで発行したHttpOnly Cookieが必要です。
 
 - `action: "settings"`, `eventId`, `commentsEnabled`, `commentsProjectionEnabled`：受付と投影許可を独立して設定。
 - `action: "hide"`, `eventId`, `commentId`：対象イベントのコメントを非表示にする。
-- `GET` に `admin=1` と同じ認証ヘッダーを付けると、非表示コメントも管理用に取得できます。一般向け取得には含めません。
+- `GET` に `admin=1` と運営用Cookieを付けると、非表示コメントも管理用に取得できます。一般向け取得には含めません。
 
 コメントとリアクションは、#7の整数ID・イベント一致の複合外部キーを使います。追加マイグレーションは投稿時の表示名を保持する `talk_comments.display_name` と、送信間隔チェック用インデックスだけです。コメント成功時は共通参加者のニックネームも更新し、過去の投稿の表示名は変えません。
 
 各画面は2秒ごとに状態を再取得します。発表が切り替わっても下書きの投稿対象は保持し、本人が明示的に切り替えるまでは元の発表へ送信します。受付停止はサーバーの保存時にも検証します。失敗時は入力を保持し、再接続後に再送できます。コメント一覧は最新200件です。
 
-`comments_projection_enabled` は設定の保存までです。実際の会場投影画面はこの状態と非表示を除いたコメントを参照して接続してください。運営用キーは画面のメモリーだけで保持し、再読込で再認証します。
+`comments_projection_enabled` は設定の保存までです。実際の会場投影画面はこの状態と非表示を除いたコメントを参照して接続してください。運営権限はLT進行と共通のHttpOnly Cookieに保存するため、画面の移動・再読込でキーの再入力は不要です。
 
 ### 交流機能の確認
 
@@ -219,7 +219,7 @@ bun run test:engagement
 
 4種類の送信・別リクエストからの取得・発表ごとの分離・連打制限・200文字と表示名の検証・受付停止／再開・非表示・運営認証・別サイトからの送信拒否を確認します。
 
-LT進行は `/admin`、交流のコメント管理は `/admin/comments` です。参加者は `/` または `/live` の発表画面から「リアクション・コメント」を開けます。
+全画面に共通の上部タブからLTライブ・LT進行・コメント管理へ移動できます。LTライブ内では発表・タイマーとリアクション・コメントを切り替えます。LT進行は `/admin`、交流のコメント管理は `/admin/comments` で、共通の「運営管理」メニューにまとめています。参加者は `/` または `/live` の発表画面から「リアクション・コメント」を開けます。
 
 ## UI統合の方針（PR #28）
 
