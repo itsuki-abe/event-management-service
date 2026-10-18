@@ -32,12 +32,15 @@ import {
 	type LiveSnapshot,
 	liveSnapshotSchema,
 } from "../lib/lt";
+import { participationApi } from "../lib/participation";
+import type { Guide } from "../lib/venue";
+import { draftsFrom } from "./guide-admin";
 import { OrganizerAccess } from "./organizer-access";
 import { ShareVideo, useSharePublisher, useShareViewer } from "./share";
 import { SpeakerAvatar } from "./speaker-avatar";
 import { WorkspaceShell } from "./workspace";
 
-type Mode = "audience" | "admin" | "screen" | "speaker";
+type Mode = "admin" | "screen" | "speaker";
 type Talk = LiveSnapshot["talks"][number];
 type TalkAction = Extract<LiveAction, { talkId: number }>["action"];
 const statusLabels = {
@@ -239,7 +242,7 @@ const minutes = (seconds: number) =>
 	seconds % 60 ? formatTime(seconds) : `${seconds / 60}分`;
 const pad = (value: number) => String(value).padStart(2, "0");
 
-export function LtPage({ mode = "audience" }: { mode?: Mode }) {
+export function LtPage({ mode }: { mode: Mode }) {
 	const live = useLive();
 	const { data } = live;
 	const current = data?.talks.find((talk) => talk.id === data.selectedTalkId);
@@ -262,21 +265,15 @@ export function LtPage({ mode = "audience" }: { mode?: Mode }) {
 		);
 	}
 
-	const content =
-		mode === "admin" ? (
-			<AdminView {...view} />
-		) : mode === "speaker" ? (
-			<SpeakerView {...view} />
-		) : (
-			<AudienceView {...view} />
-		);
 	return (
 		<WorkspaceShell
-			section={mode === "audience" ? "live" : mode}
+			section={mode}
 			eventId={data?.event?.id ?? 1}
 			name={data?.event?.name}
 		>
-			<div className={`lt-app ${mode}`}>{content}</div>
+			<div className={`lt-app ${mode}`}>
+				{mode === "admin" ? <AdminView {...view} /> : <SpeakerView {...view} />}
+			</div>
 		</WorkspaceShell>
 	);
 }
@@ -286,78 +283,6 @@ type ViewProps = ReturnType<typeof useLive> & {
 	next: Talk | undefined;
 	position: string;
 };
-
-function AudienceView({
-	data,
-	connected,
-	now,
-	current,
-	next,
-	position,
-}: ViewProps) {
-	return (
-		<>
-			<Connection connected={connected} hasData={Boolean(data)} />
-			<div className="live-layout">
-				<section aria-label="現在の発表">
-					{current ? (
-						<>
-							<div className="live-title">
-								<div className="row between">
-									<span className="eyebrow">LT LIVE · {position}</span>
-									<Status talk={current} now={now} />
-								</div>
-								<h1>{current.title}</h1>
-								<div className="row">
-									<Initial talk={current} />
-									<strong>{current.speaker}</strong>
-								</div>
-							</div>
-							<div className="time-panel">
-								<Timer talk={current} now={now} />
-							</div>
-						</>
-					) : (
-						<p className="muted">
-							{data ? "発表の開始をお待ちください。" : "読み込み中…"}
-						</p>
-					)}
-				</section>
-				{data && data.talks.length > 0 && (
-					<section className="panel" aria-label="プログラム">
-						<h2>プログラム</h2>
-						<ol className="program">
-							{data.talks.map((talk, index) => (
-								<li
-									key={talk.id}
-									className={talk.id === current?.id ? "active" : talk.status}
-									aria-current={talk.id === current?.id ? "true" : undefined}
-								>
-									<span className="num">{pad(index + 1)}</span>
-									<span className="text">
-										<strong>{talk.speaker}</strong>
-										<small>{talk.title}</small>
-									</span>
-									{talk.id === current?.id ? (
-										<Status talk={talk} now={now} />
-									) : talk.id === next?.id ? (
-										<span className="badge blue">次</span>
-									) : talk.status === "ended" ? (
-										<span className="badge gray">終了</span>
-									) : (
-										<small className="muted">
-											{minutes(talk.durationSeconds)}
-										</small>
-									)}
-								</li>
-							))}
-						</ol>
-					</section>
-				)}
-			</div>
-		</>
-	);
-}
 
 const reactionIcons = {
 	applause: Hand,
@@ -635,17 +560,22 @@ function AdminView({
 		<>
 			<div className="wc-admin-actions">
 				<nav className="header-links" aria-label="表示画面を開く">
-					<a href="/live" target="_blank" rel="noreferrer">
-						参加者画面
-					</a>
 					<a href="/speaker" target="_blank" rel="noreferrer">
 						発表者画面
 					</a>
 					<a href="/screen" target="_blank" rel="noreferrer">
 						画面共有・リアクション
 					</a>
+					<a
+						href={`/events/${data?.event?.id ?? 1}/qr`}
+						target="_blank"
+						rel="noreferrer"
+					>
+						参加QR（印刷用）
+					</a>
 				</nav>
 			</div>
+			{data?.event && <NoticeEditor eventId={String(data.event.id)} />}
 			<Connection connected={connected} hasData={Boolean(data)} />
 			{error && (
 				<p className="notice error" role="alert">
@@ -959,6 +889,88 @@ function ShareSource({
 				<p className="small muted">次の発表はありません。</p>
 			)}
 		</aside>
+	);
+}
+
+function NoticeEditor({ eventId }: { eventId: string }) {
+	const [guides, setGuides] = useState<Guide[] | null>(null);
+	const [text, setText] = useState("");
+	const [busy, setBusy] = useState(false);
+	const [message, setMessage] = useState("");
+	useEffect(() => {
+		participationApi<{ guides: Guide[] }>(eventId, "guide/manage")
+			.then((result) => {
+				setGuides(result.guides);
+				const notice = result.guides.find((g) => g.category === "notice");
+				if (notice?.isVisible) setText(notice.content);
+			})
+			.catch(() => {});
+	}, [eventId]);
+	async function publish(content: string) {
+		if (!guides) return;
+		setBusy(true);
+		setMessage("");
+		try {
+			const result = await participationApi<{ guides: Guide[] }>(
+				eventId,
+				"guide/manage",
+				{
+					guides: draftsFrom(guides).map((draft) =>
+						draft.category === "notice"
+							? {
+									...draft,
+									title: draft.title.trim() || "お知らせ",
+									content,
+									isVisible: Boolean(content.trim()),
+								}
+							: draft,
+					),
+				},
+			);
+			setGuides(result.guides);
+			setText(content);
+			setMessage(
+				content.trim() ? "お知らせを出しました。" : "お知らせを消しました。",
+			);
+		} catch (cause) {
+			setMessage(
+				cause instanceof Error ? cause.message : "保存できませんでした。",
+			);
+		} finally {
+			setBusy(false);
+		}
+	}
+	if (!guides) return null;
+	return (
+		<form
+			className="notice-editor"
+			onSubmit={(event) => {
+				event.preventDefault();
+				void publish(text);
+			}}
+		>
+			<label>
+				参加者へのお知らせ
+				<input
+					value={text}
+					maxLength={4000}
+					placeholder="例：15:30から後半を再開します"
+					onChange={(event) => setText(event.target.value)}
+				/>
+			</label>
+			<button type="submit" className="primary" disabled={busy || !text.trim()}>
+				お知らせを出す
+			</button>
+			<button
+				type="button"
+				className="secondary"
+				disabled={busy}
+				onClick={() => void publish("")}
+			>
+				消す
+			</button>
+			{message && <output className="small muted">{message}</output>}
+		</form>
 	);
 }
 

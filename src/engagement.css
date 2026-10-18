@@ -491,35 +491,6 @@
 	max-width: 85%;
 	text-align: center;
 }
-.commons-app .name-sheet {
-	margin: auto;
-	border: 0;
-	background: var(--paper);
-	border-radius: 15px;
-	width: 450px;
-	max-width: calc(100% - 32px);
-	padding: 29px;
-	color: var(--ink);
-}
-.commons-app .name-sheet::backdrop {
-	background: #202a3460;
-}
-.commons-app .name-sheet h2 {
-	font-size: 23px;
-	margin-bottom: 12px;
-}
-.commons-app .name-sheet label {
-	margin-top: 24px;
-}
-.commons-app .name-sheet .subtle-tip {
-	margin-top: 10px;
-}
-.commons-app .name-sheet .primary {
-	margin-top: 20px;
-}
-.commons-app .name-sheet .secondary {
-	margin-top: 10px;
-}
 @media (max-width: 760px) {
 	.commons-app .page {
 		padding: 23px 20px calc(100px + env(safe-area-inset-bottom));
@@ -574,14 +545,6 @@
 
 	.commons-app .toast {
 		bottom: calc(86px + env(safe-area-inset-bottom));
-	}
-	.commons-app .name-sheet {
-		margin: auto 0 0;
-		width: 100%;
-		max-width: 100%;
-		border-radius: 15px 15px 0 0;
-		padding: 25px 22px calc(25px + env(safe-area-inset-bottom));
-		max-height: 85dvh;
 	}
 
 	.commons-app .connection {

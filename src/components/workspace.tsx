@@ -8,7 +8,6 @@ import {
 	QrCode,
 	Settings2,
 	UserRound,
-	Users,
 } from "lucide-react";
 
 export type WorkspaceSection =
@@ -23,8 +22,7 @@ export type WorkspaceSection =
 	| "screen"
 	| "qr"
 	| "guide"
-	| "participants"
-	| "team";
+	| "participants";
 
 export function WorkspaceShell({
 	children,
@@ -56,7 +54,6 @@ export function WorkspaceShell({
 			href: "/screen",
 			icon: MessageCircle,
 		},
-		{ id: "team", label: "チーム", href: `${eventPath}/team`, icon: Users },
 		{
 			id: "participants",
 			label: "参加者",
@@ -164,22 +161,6 @@ export function WorkspaceShell({
 							{itemsForManagement()}
 						</nav>
 					</section>
-				)}
-				{["live", "screen"].includes(section) && (
-					<nav className="wc-section-tabs" aria-label="LTライブの表示">
-						<a
-							href="/live"
-							aria-current={section === "live" ? "page" : undefined}
-						>
-							発表・タイマー
-						</a>
-						<a
-							href="/screen"
-							aria-current={section === "screen" ? "page" : undefined}
-						>
-							画面共有・リアクション
-						</a>
-					</nav>
 				)}
 				{children}
 				{!registrationOnly && (

@@ -27,7 +27,6 @@ import { Route as EventsEventIdConnectRouteImport } from './routes/events.$event
 import { Route as EventsEventIdGuideRouteImport } from './routes/events.$eventId_.guide'
 import { Route as EventsEventIdParticipantsRouteImport } from './routes/events.$eventId_.participants'
 import { Route as EventsEventIdQrRouteImport } from './routes/events.$eventId_.qr'
-import { Route as EventsEventIdTeamRouteImport } from './routes/events.$eventId_.team'
 import { Route as ApiEventsEventIdSplatRouteImport } from './routes/api.events.$eventId.$'
 
 const IndexRoute = IndexRouteImport.update({
@@ -121,11 +120,6 @@ const EventsEventIdQrRoute = EventsEventIdQrRouteImport.update({
   path: '/events/$eventId/qr',
   getParentRoute: () => rootRouteImport,
 } as any)
-const EventsEventIdTeamRoute = EventsEventIdTeamRouteImport.update({
-  id: '/events/$eventId_/team',
-  path: '/events/$eventId/team',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiEventsEventIdSplatRoute = ApiEventsEventIdSplatRouteImport.update({
   id: '/$eventId/$',
   path: '/$eventId/$',
@@ -151,7 +145,6 @@ export interface FileRoutesByFullPath {
   '/events/$eventId/guide': typeof EventsEventIdGuideRoute
   '/events/$eventId/participants': typeof EventsEventIdParticipantsRoute
   '/events/$eventId/qr': typeof EventsEventIdQrRoute
-  '/events/$eventId/team': typeof EventsEventIdTeamRoute
   '/api/events/$eventId/$': typeof ApiEventsEventIdSplatRoute
 }
 export interface FileRoutesByTo {
@@ -173,7 +166,6 @@ export interface FileRoutesByTo {
   '/events/$eventId/guide': typeof EventsEventIdGuideRoute
   '/events/$eventId/participants': typeof EventsEventIdParticipantsRoute
   '/events/$eventId/qr': typeof EventsEventIdQrRoute
-  '/events/$eventId/team': typeof EventsEventIdTeamRoute
   '/api/events/$eventId/$': typeof ApiEventsEventIdSplatRoute
 }
 export interface FileRoutesById {
@@ -196,7 +188,6 @@ export interface FileRoutesById {
   '/events/$eventId_/guide': typeof EventsEventIdGuideRoute
   '/events/$eventId_/participants': typeof EventsEventIdParticipantsRoute
   '/events/$eventId_/qr': typeof EventsEventIdQrRoute
-  '/events/$eventId_/team': typeof EventsEventIdTeamRoute
   '/api/events/$eventId/$': typeof ApiEventsEventIdSplatRoute
 }
 export interface FileRouteTypes {
@@ -220,7 +211,6 @@ export interface FileRouteTypes {
     | '/events/$eventId/guide'
     | '/events/$eventId/participants'
     | '/events/$eventId/qr'
-    | '/events/$eventId/team'
     | '/api/events/$eventId/$'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -242,7 +232,6 @@ export interface FileRouteTypes {
     | '/events/$eventId/guide'
     | '/events/$eventId/participants'
     | '/events/$eventId/qr'
-    | '/events/$eventId/team'
     | '/api/events/$eventId/$'
   id:
     | '__root__'
@@ -264,7 +253,6 @@ export interface FileRouteTypes {
     | '/events/$eventId_/guide'
     | '/events/$eventId_/participants'
     | '/events/$eventId_/qr'
-    | '/events/$eventId_/team'
     | '/api/events/$eventId/$'
   fileRoutesById: FileRoutesById
 }
@@ -287,7 +275,6 @@ export interface RootRouteChildren {
   EventsEventIdGuideRoute: typeof EventsEventIdGuideRoute
   EventsEventIdParticipantsRoute: typeof EventsEventIdParticipantsRoute
   EventsEventIdQrRoute: typeof EventsEventIdQrRoute
-  EventsEventIdTeamRoute: typeof EventsEventIdTeamRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -418,13 +405,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EventsEventIdQrRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/events/$eventId_/team': {
-      id: '/events/$eventId_/team'
-      path: '/events/$eventId/team'
-      fullPath: '/events/$eventId/team'
-      preLoaderRoute: typeof EventsEventIdTeamRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/events/$eventId/$': {
       id: '/api/events/$eventId/$'
       path: '/$eventId/$'
@@ -466,17 +446,7 @@ const rootRouteChildren: RootRouteChildren = {
   EventsEventIdGuideRoute: EventsEventIdGuideRoute,
   EventsEventIdParticipantsRoute: EventsEventIdParticipantsRoute,
   EventsEventIdQrRoute: EventsEventIdQrRoute,
-  EventsEventIdTeamRoute: EventsEventIdTeamRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
