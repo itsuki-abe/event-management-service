@@ -1,0 +1,234 @@
+import {
+	ArrowRight,
+	ChevronRight,
+	Info,
+	Laptop,
+	MapPin,
+	Users,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+	elapsedSeconds,
+	formatTime,
+	type LiveSnapshot,
+	liveSnapshotSchema,
+} from "../lib/lt";
+import { type Participation, participationApi } from "../lib/participation";
+import { WorkspaceShell } from "./workspace";
+
+type Guide = { id: number; category: string; title: string; content: string };
+export function Dashboard() {
+	const [live, setLive] = useState<LiveSnapshot | null>(null);
+	const [session, setSession] = useState<Participation | null>(null);
+	const [notice, setNotice] = useState<Guide | null>(null);
+	const [error, setError] = useState("");
+	const [tick, setTick] = useState(0);
+	const clock = useRef({ server: 0, received: 0 });
+	useEffect(() => {
+		const timer = setInterval(() => setTick(performance.now()), 1000);
+		return () => clearInterval(timer);
+	}, []);
+	useEffect(() => {
+		let active = true;
+		let timer: ReturnType<typeof setTimeout>;
+		async function load() {
+			try {
+				const response = await fetch("/api/lt", { cache: "no-store" });
+				if (!response.ok)
+					throw new Error(
+						"イベント情報を取得できませんでした。再接続しています。",
+					);
+				const snapshot = liveSnapshotSchema.parse(await response.json());
+				let participation: Participation | null = null;
+				let guide: Guide | null = null;
+				if (snapshot.event) {
+					const [member, venue] = await Promise.all([
+						participationApi<Participation>(
+							String(snapshot.event.id),
+							"session",
+						),
+						participationApi<{ guides: Guide[] }>(
+							String(snapshot.event.id),
+							"guide",
+						),
+					]);
+					participation = member;
+					guide =
+						venue.guides.find((item) =>
+							/^(notice|announcement|important)$/.test(item.category),
+						) ?? null;
+				}
+				if (active) {
+					setLive(snapshot);
+					setSession(participation);
+					setNotice(guide);
+					clock.current = {
+						server: snapshot.serverNow,
+						received: performance.now(),
+					};
+					setTick(clock.current.received);
+					setError("");
+				}
+			} catch (error) {
+				if (active)
+					setError(
+						error instanceof Error ? error.message : "接続を確認してください。",
+					);
+			}
+			if (active) timer = setTimeout(load, 5000);
+		}
+		void load();
+		return () => {
+			active = false;
+			clearTimeout(timer);
+		};
+	}, []);
+	const eventPath = `/events/${live?.event?.id ?? 1}`;
+	const current = live?.talks.find((talk) => talk.id === live.selectedTalkId);
+	const currentIndex =
+		live?.talks.findIndex((talk) => talk.id === current?.id) ?? -1;
+	const serverTime =
+		clock.current.server + Math.max(0, tick - clock.current.received) / 1000;
+	const status = current
+		? {
+				pending: "開始待ち",
+				running: "発表中",
+				paused: "一時停止",
+				ended: "終了",
+			}[current.status]
+		: "開始待ち";
+	return (
+		<WorkspaceShell
+			name={live?.event?.name}
+			eventId={live?.event?.id}
+			identity={session?.participant?.nickname}
+		>
+			{error && (
+				<p role="alert" className="wc-notice wc-error">
+					{error}
+					{live && " 最後に取得した情報を表示しています。"}
+				</p>
+			)}
+			<div className="wc-home-layout">
+				<section className="wc-home-intro">
+					<div className="wc-eyebrow">
+						{live?.event?.name ?? "TODAY’S WORKSHOP"}
+					</div>
+					<img
+						className="wc-hero-image"
+						src="/images/workshop-commons-hero.png"
+						alt="4人がテーブルを囲み共同制作しているイラスト"
+						width={1916}
+						height={821}
+					/>
+					<h1>LTを楽しもう</h1>
+					<p>
+						仲間の学びから、次のアイデアが生まれる。
+						<br />
+						今日の発表を、あなたのスマホとPCで。
+					</p>
+				</section>
+				<section>
+					<div className="wc-live-summary">
+						<div className="wc-row wc-between">
+							<span
+								className={`wc-badge ${current?.status === "running" ? "peach" : "blue"}`}
+							>
+								{status}
+							</span>
+							{current && (
+								<div className="wc-row">
+									<span className="wc-timer">
+										{formatTime(
+											current.durationSeconds -
+												elapsedSeconds(current, serverTime),
+										)}
+									</span>
+									<span className="wc-small wc-muted">
+										{current.status === "pending" ? "持ち時間" : "残り"}
+									</span>
+								</div>
+							)}
+						</div>
+						<h2>
+							{current?.title ??
+								(live
+									? "次の発表をお待ちください"
+									: "イベントを確認しています…")}
+						</h2>
+						<div className="wc-row">
+							<span className="wc-initial">
+								{current?.speaker.slice(0, 1) ?? "W"}
+							</span>
+							<div>
+								<strong>{current?.speaker ?? "まもなく、ここから。"}</strong>
+								<br />
+								<small className="wc-muted">
+									{current
+										? `LT ${String(currentIndex + 1).padStart(2, "0")} / ${String(live?.talks.length).padStart(2, "0")}`
+										: "運営が発表を登録すると表示されます。"}
+								</small>
+							</div>
+						</div>
+						<a className="wc-button wc-primary wc-full" href="/live">
+							ライブに参加
+							<ArrowRight size={21} aria-hidden="true" />
+						</a>
+					</div>
+					<div className="wc-quick-links">
+						<a className="wc-link-row" href={`${eventPath}/guide`}>
+							<MapPin size={24} aria-hidden="true" />
+							<span>
+								会場案内<small>Wi-Fi・トイレ・入退館</small>
+							</span>
+							<ChevronRight size={22} aria-hidden="true" />
+						</a>
+						<a className="wc-link-row" href={`${eventPath}/team`}>
+							<Users size={24} aria-hidden="true" />
+							<span>
+								チームを見る<small>所属先と集合場所</small>
+							</span>
+							<ChevronRight size={22} aria-hidden="true" />
+						</a>
+					</div>
+				</section>
+			</div>
+			{notice && (
+				<div className="wc-notice">
+					<Info size={22} aria-hidden="true" />
+					<div>
+						<strong>{notice.title}</strong>
+						<p>{notice.content}</p>
+					</div>
+				</div>
+			)}
+			<section className="wc-participation-banner">
+				<div>
+					<span className="wc-badge blue">
+						{session?.participant ? "参加登録済み" : "はじめての方へ"}
+					</span>
+					<h2>
+						{session?.participant
+							? `${session.participant.nickname}さんの参加パス`
+							: "あなたの名前で、参加しよう。"}
+					</h2>
+					<p>
+						{session?.participant
+							? `${session.devices.length}台の端末で参加しています。プロフィールや接続端末を確認できます。`
+							: "表示名を登録して、自分のスマホとPC／Macをつなげましょう。"}
+					</p>
+				</div>
+				<div className="wc-banner-actions">
+					<a className="wc-button wc-primary" href={eventPath}>
+						{session?.participant ? "プロフィールを確認" : "参加登録する"}
+						<ArrowRight size={18} aria-hidden="true" />
+					</a>
+					<a className="wc-button wc-secondary" href={`${eventPath}/connect`}>
+						<Laptop size={20} aria-hidden="true" />
+						PC／Macを接続
+					</a>
+				</div>
+			</section>
+		</WorkspaceShell>
+	);
+}

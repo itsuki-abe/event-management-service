@@ -7,6 +7,8 @@ import {
 	liveSnapshotSchema,
 } from "../lib/lt";
 
+import { WorkspaceShell } from "./workspace";
+
 type Mode = "audience" | "admin" | "screen" | "speaker";
 type Talk = LiveSnapshot["talks"][number];
 type TalkAction = Extract<LiveAction, { talkId: number }>["action"];
@@ -226,10 +228,26 @@ export function LtPage({ mode = "audience" }: { mode?: Mode }) {
 		: "";
 	const view = { ...live, current, next, position };
 
-	if (mode === "admin") return <AdminView {...view} />;
-	if (mode === "speaker") return <SpeakerView {...view} />;
-	if (mode === "screen") return <ScreenView {...view} />;
-	return <AudienceView {...view} />;
+	const content =
+		mode === "admin" ? (
+			<AdminView {...view} />
+		) : mode === "speaker" ? (
+			<SpeakerView {...view} />
+		) : mode === "screen" ? (
+			<ScreenView {...view} />
+		) : (
+			<AudienceView {...view} />
+		);
+	return (
+		<WorkspaceShell
+			section={mode === "audience" ? "live" : mode === "screen" ? "live" : mode}
+			eventId={data?.event?.id ?? 1}
+			name={data?.event?.name}
+			bare={mode === "screen"}
+		>
+			<div className={`lt-app ${mode}`}>{content}</div>
+		</WorkspaceShell>
+	);
 }
 
 type ViewProps = ReturnType<typeof useLive> & {
@@ -274,7 +292,7 @@ function AudienceView({
 				</a>
 			</SiteHeader>
 			<Connection connected={connected} hasData={Boolean(data)} />
-			<main className="page live-layout">
+			<div className="page live-layout">
 				<section aria-label="現在の発表">
 					{current ? (
 						<>
@@ -330,7 +348,7 @@ function AudienceView({
 						</ol>
 					</section>
 				)}
-			</main>
+			</div>
 		</div>
 	);
 }
@@ -340,7 +358,7 @@ function SpeakerView({ data, connected, now, current, next }: ViewProps) {
 		<div className="app">
 			<SiteHeader name={data?.event?.name} page="発表者" />
 			<Connection connected={connected} hasData={Boolean(data)} />
-			<main className="page">
+			<div className="page">
 				<div className="page-heading">
 					<div>
 						<h1>発表者の手元</h1>
@@ -372,7 +390,7 @@ function SpeakerView({ data, connected, now, current, next }: ViewProps) {
 						発表が選ばれると、ここにタイマーが表示されます。
 					</p>
 				)}
-			</main>
+			</div>
 		</div>
 	);
 }
@@ -453,7 +471,7 @@ function AdminView({
 		return (
 			<div className="app">
 				<SiteHeader page="LT進行" />
-				<main className="page gate">
+				<div className="page gate">
 					{authorized === null ? (
 						<p className="muted">確認中…</p>
 					) : (
@@ -465,7 +483,7 @@ function AdminView({
 							<a href="/live">参加者向けの画面へ</a>
 						</>
 					)}
-				</main>
+				</div>
 			</div>
 		);
 
@@ -509,7 +527,7 @@ function AdminView({
 				</p>
 			)}
 			{data && !data.event && (
-				<main className="page gate">
+				<div className="page gate">
 					<h1>イベントを作成</h1>
 					<form
 						className="stack"
@@ -529,10 +547,10 @@ function AdminView({
 							作成
 						</button>
 					</form>
-				</main>
+				</div>
 			)}
 			{data?.event && (
-				<main className="page operator-grid">
+				<div className="page operator-grid">
 					<aside aria-label="発表一覧">
 						<h3>発表一覧</h3>
 						<ol className="op-list">
@@ -775,7 +793,7 @@ function AdminView({
 							<p className="small muted">次の発表はありません。</p>
 						)}
 					</aside>
-				</main>
+				</div>
 			)}
 		</div>
 	);

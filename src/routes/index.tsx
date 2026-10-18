@@ -1,3 +1,3 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { LtPage } from "../components/lt";
-export const Route = createFileRoute("/")({ component: LtPage });
+import { Dashboard } from "../components/dashboard";
+export const Route = createFileRoute("/")({ component: Dashboard });

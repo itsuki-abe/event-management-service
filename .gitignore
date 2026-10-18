@@ -10,3 +10,5 @@ dist/
 *.local
 *.local.*
 .DS_Store
+output/playwright/
+.playwright-cli/

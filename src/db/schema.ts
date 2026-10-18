@@ -57,6 +57,7 @@ export const deviceSessions = sqliteTable(
 			.notNull()
 			.references(() => events.id),
 		participantId: integer("participant_id"),
+		deviceName: text("device_name").notNull().default("ブラウザー"),
 		tokenHash: text("token_hash").notNull().unique(),
 		expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
 		...timestamps(),

@@ -1,0 +1,1 @@
+ALTER TABLE `device_sessions` ADD `device_name` text DEFAULT 'ブラウザー' NOT NULL;

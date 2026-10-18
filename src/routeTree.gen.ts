@@ -17,9 +17,16 @@ import { Route as ScreenRouteImport } from './routes/screen'
 import { Route as SpeakerRouteImport } from './routes/speaker'
 import { Route as AdminCommentsRouteImport } from './routes/admin_.comments'
 import { Route as ApiEngagementRouteImport } from './routes/api.engagement'
+import { Route as ApiEventsRouteImport } from './routes/api.events'
 import { Route as ApiHealthRouteImport } from './routes/api.health'
 import { Route as ApiLoginRouteImport } from './routes/api.login'
 import { Route as ApiLtRouteImport } from './routes/api.lt'
+import { Route as EventsEventIdRouteImport } from './routes/events.$eventId'
+import { Route as EventsEventIdConnectRouteImport } from './routes/events.$eventId_.connect'
+import { Route as EventsEventIdGuideRouteImport } from './routes/events.$eventId_.guide'
+import { Route as EventsEventIdQrRouteImport } from './routes/events.$eventId_.qr'
+import { Route as EventsEventIdTeamRouteImport } from './routes/events.$eventId_.team'
+import { Route as ApiEventsEventIdSplatRouteImport } from './routes/api.events.$eventId.$'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -61,6 +68,11 @@ const ApiEngagementRoute = ApiEngagementRouteImport.update({
   path: '/api/engagement',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiEventsRoute = ApiEventsRouteImport.update({
+  id: '/api/events',
+  path: '/api/events',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiHealthRoute = ApiHealthRouteImport.update({
   id: '/api/health',
   path: '/api/health',
@@ -76,6 +88,36 @@ const ApiLtRoute = ApiLtRouteImport.update({
   path: '/api/lt',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EventsEventIdRoute = EventsEventIdRouteImport.update({
+  id: '/events/$eventId',
+  path: '/events/$eventId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventsEventIdConnectRoute = EventsEventIdConnectRouteImport.update({
+  id: '/events/$eventId_/connect',
+  path: '/events/$eventId/connect',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventsEventIdGuideRoute = EventsEventIdGuideRouteImport.update({
+  id: '/events/$eventId_/guide',
+  path: '/events/$eventId/guide',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventsEventIdQrRoute = EventsEventIdQrRouteImport.update({
+  id: '/events/$eventId_/qr',
+  path: '/events/$eventId/qr',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventsEventIdTeamRoute = EventsEventIdTeamRouteImport.update({
+  id: '/events/$eventId_/team',
+  path: '/events/$eventId/team',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiEventsEventIdSplatRoute = ApiEventsEventIdSplatRouteImport.update({
+  id: '/$eventId/$',
+  path: '/$eventId/$',
+  getParentRoute: () => ApiEventsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -86,9 +128,16 @@ export interface FileRoutesByFullPath {
   '/speaker': typeof SpeakerRoute
   '/admin/comments': typeof AdminCommentsRoute
   '/api/engagement': typeof ApiEngagementRoute
+  '/api/events': typeof ApiEventsRouteWithChildren
   '/api/health': typeof ApiHealthRoute
   '/api/login': typeof ApiLoginRoute
   '/api/lt': typeof ApiLtRoute
+  '/events/$eventId': typeof EventsEventIdRoute
+  '/events/$eventId/connect': typeof EventsEventIdConnectRoute
+  '/events/$eventId/guide': typeof EventsEventIdGuideRoute
+  '/events/$eventId/qr': typeof EventsEventIdQrRoute
+  '/events/$eventId/team': typeof EventsEventIdTeamRoute
+  '/api/events/$eventId/$': typeof ApiEventsEventIdSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -99,9 +148,16 @@ export interface FileRoutesByTo {
   '/speaker': typeof SpeakerRoute
   '/admin/comments': typeof AdminCommentsRoute
   '/api/engagement': typeof ApiEngagementRoute
+  '/api/events': typeof ApiEventsRouteWithChildren
   '/api/health': typeof ApiHealthRoute
   '/api/login': typeof ApiLoginRoute
   '/api/lt': typeof ApiLtRoute
+  '/events/$eventId': typeof EventsEventIdRoute
+  '/events/$eventId/connect': typeof EventsEventIdConnectRoute
+  '/events/$eventId/guide': typeof EventsEventIdGuideRoute
+  '/events/$eventId/qr': typeof EventsEventIdQrRoute
+  '/events/$eventId/team': typeof EventsEventIdTeamRoute
+  '/api/events/$eventId/$': typeof ApiEventsEventIdSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -113,9 +169,16 @@ export interface FileRoutesById {
   '/speaker': typeof SpeakerRoute
   '/admin_/comments': typeof AdminCommentsRoute
   '/api/engagement': typeof ApiEngagementRoute
+  '/api/events': typeof ApiEventsRouteWithChildren
   '/api/health': typeof ApiHealthRoute
   '/api/login': typeof ApiLoginRoute
   '/api/lt': typeof ApiLtRoute
+  '/events/$eventId': typeof EventsEventIdRoute
+  '/events/$eventId_/connect': typeof EventsEventIdConnectRoute
+  '/events/$eventId_/guide': typeof EventsEventIdGuideRoute
+  '/events/$eventId_/qr': typeof EventsEventIdQrRoute
+  '/events/$eventId_/team': typeof EventsEventIdTeamRoute
+  '/api/events/$eventId/$': typeof ApiEventsEventIdSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -128,9 +191,16 @@ export interface FileRouteTypes {
     | '/speaker'
     | '/admin/comments'
     | '/api/engagement'
+    | '/api/events'
     | '/api/health'
     | '/api/login'
     | '/api/lt'
+    | '/events/$eventId'
+    | '/events/$eventId/connect'
+    | '/events/$eventId/guide'
+    | '/events/$eventId/qr'
+    | '/events/$eventId/team'
+    | '/api/events/$eventId/$'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -141,9 +211,16 @@ export interface FileRouteTypes {
     | '/speaker'
     | '/admin/comments'
     | '/api/engagement'
+    | '/api/events'
     | '/api/health'
     | '/api/login'
     | '/api/lt'
+    | '/events/$eventId'
+    | '/events/$eventId/connect'
+    | '/events/$eventId/guide'
+    | '/events/$eventId/qr'
+    | '/events/$eventId/team'
+    | '/api/events/$eventId/$'
   id:
     | '__root__'
     | '/'
@@ -154,9 +231,16 @@ export interface FileRouteTypes {
     | '/speaker'
     | '/admin_/comments'
     | '/api/engagement'
+    | '/api/events'
     | '/api/health'
     | '/api/login'
     | '/api/lt'
+    | '/events/$eventId'
+    | '/events/$eventId_/connect'
+    | '/events/$eventId_/guide'
+    | '/events/$eventId_/qr'
+    | '/events/$eventId_/team'
+    | '/api/events/$eventId/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -168,9 +252,15 @@ export interface RootRouteChildren {
   SpeakerRoute: typeof SpeakerRoute
   AdminCommentsRoute: typeof AdminCommentsRoute
   ApiEngagementRoute: typeof ApiEngagementRoute
+  ApiEventsRoute: typeof ApiEventsRouteWithChildren
   ApiHealthRoute: typeof ApiHealthRoute
   ApiLoginRoute: typeof ApiLoginRoute
   ApiLtRoute: typeof ApiLtRoute
+  EventsEventIdRoute: typeof EventsEventIdRoute
+  EventsEventIdConnectRoute: typeof EventsEventIdConnectRoute
+  EventsEventIdGuideRoute: typeof EventsEventIdGuideRoute
+  EventsEventIdQrRoute: typeof EventsEventIdQrRoute
+  EventsEventIdTeamRoute: typeof EventsEventIdTeamRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -231,6 +321,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiEngagementRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/events': {
+      id: '/api/events'
+      path: '/api/events'
+      fullPath: '/api/events'
+      preLoaderRoute: typeof ApiEventsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/health': {
       id: '/api/health'
       path: '/api/health'
@@ -252,8 +349,62 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiLtRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/events/$eventId': {
+      id: '/events/$eventId'
+      path: '/events/$eventId'
+      fullPath: '/events/$eventId'
+      preLoaderRoute: typeof EventsEventIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/events/$eventId_/connect': {
+      id: '/events/$eventId_/connect'
+      path: '/events/$eventId/connect'
+      fullPath: '/events/$eventId/connect'
+      preLoaderRoute: typeof EventsEventIdConnectRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/events/$eventId_/guide': {
+      id: '/events/$eventId_/guide'
+      path: '/events/$eventId/guide'
+      fullPath: '/events/$eventId/guide'
+      preLoaderRoute: typeof EventsEventIdGuideRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/events/$eventId_/qr': {
+      id: '/events/$eventId_/qr'
+      path: '/events/$eventId/qr'
+      fullPath: '/events/$eventId/qr'
+      preLoaderRoute: typeof EventsEventIdQrRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/events/$eventId_/team': {
+      id: '/events/$eventId_/team'
+      path: '/events/$eventId/team'
+      fullPath: '/events/$eventId/team'
+      preLoaderRoute: typeof EventsEventIdTeamRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/events/$eventId/$': {
+      id: '/api/events/$eventId/$'
+      path: '/$eventId/$'
+      fullPath: '/api/events/$eventId/$'
+      preLoaderRoute: typeof ApiEventsEventIdSplatRouteImport
+      parentRoute: typeof ApiEventsRoute
+    }
   }
 }
+
+interface ApiEventsRouteChildren {
+  ApiEventsEventIdSplatRoute: typeof ApiEventsEventIdSplatRoute
+}
+
+const ApiEventsRouteChildren: ApiEventsRouteChildren = {
+  ApiEventsEventIdSplatRoute: ApiEventsEventIdSplatRoute,
+}
+
+const ApiEventsRouteWithChildren = ApiEventsRoute._addFileChildren(
+  ApiEventsRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -264,9 +415,15 @@ const rootRouteChildren: RootRouteChildren = {
   SpeakerRoute: SpeakerRoute,
   AdminCommentsRoute: AdminCommentsRoute,
   ApiEngagementRoute: ApiEngagementRoute,
+  ApiEventsRoute: ApiEventsRouteWithChildren,
   ApiHealthRoute: ApiHealthRoute,
   ApiLoginRoute: ApiLoginRoute,
   ApiLtRoute: ApiLtRoute,
+  EventsEventIdRoute: EventsEventIdRoute,
+  EventsEventIdConnectRoute: EventsEventIdConnectRoute,
+  EventsEventIdGuideRoute: EventsEventIdGuideRoute,
+  EventsEventIdQrRoute: EventsEventIdQrRoute,
+  EventsEventIdTeamRoute: EventsEventIdTeamRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

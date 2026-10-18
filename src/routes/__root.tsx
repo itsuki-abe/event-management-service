@@ -5,6 +5,7 @@ import appCss from "../styles.css?url";
 export const Route = createRootRoute({
 	head: () => ({
 		meta: [
+			{ name: "referrer", content: "no-referrer" },
 			{
 				charSet: "utf-8",
 			},
@@ -13,7 +14,7 @@ export const Route = createRootRoute({
 				content: "width=device-width, initial-scale=1",
 			},
 			{
-				title: "LTライブ",
+				title: "Workshop Commons",
 			},
 		],
 		links: [
