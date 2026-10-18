@@ -1,14 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { EngagementPage } from "../features/engagement/EngagementPage";
 
-export const Route = createFileRoute("/")({ component: Home });
-
+export const Route = createFileRoute("/")({
+	validateSearch: (search: Record<string, unknown>) => ({
+		eventId:
+			Number.isSafeInteger(Number(search.eventId)) && Number(search.eventId) > 0
+				? Number(search.eventId)
+				: 1,
+	}),
+	component: Home,
+});
 function Home() {
-	return (
-		<div className="p-8">
-			<h1 className="text-4xl font-bold">Welcome to TanStack Start</h1>
-			<p className="mt-4 text-lg">
-				Edit <code>src/routes/index.tsx</code> to get started.
-			</p>
-		</div>
-	);
+	const { eventId } = Route.useSearch();
+	return <EngagementPage key={eventId} eventId={eventId} />;
 }

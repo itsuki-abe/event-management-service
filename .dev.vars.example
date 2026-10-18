@@ -1,0 +1,3 @@
+# Copy to .dev.vars, replace with a long random value, then restart the dev server.
+# Never commit .dev.vars or share the organizer key with participants.
+ENGAGEMENT_ADMIN_TOKEN="replace-with-a-long-random-key"

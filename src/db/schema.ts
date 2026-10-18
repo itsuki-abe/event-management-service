@@ -198,6 +198,7 @@ export const talkComments = sqliteTable(
 		eventId: integer("event_id").notNull(),
 		talkId: integer("talk_id").notNull(),
 		participantId: integer("participant_id").notNull(),
+		displayName: text("display_name").notNull().default(""),
 		body: text().notNull(),
 		hiddenAt: integer("hidden_at", { mode: "timestamp" }),
 		...timestamps(),
@@ -237,6 +238,7 @@ export const reactions = sqliteTable(
 			foreignColumns: [participants.id, participants.eventId],
 		}),
 		index("reactions_talk_kind_idx").on(t.talkId, t.kind),
+		index("reactions_participant_created_idx").on(t.participantId, t.createdAt),
 	],
 );
 

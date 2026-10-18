@@ -8,6 +8,13 @@
       "when": 1792302203656,
       "tag": "0000_event_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1792303016904,
+      "tag": "0001_lying_shatterstar",
+      "breakpoints": true
     }
   ]
 }
