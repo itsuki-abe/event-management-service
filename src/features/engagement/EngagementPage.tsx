@@ -5,6 +5,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { ReactionOverlay } from "./ReactionOverlay";
 import { OrganizerAccess } from "../../components/organizer-access";
 import { SpeakerAvatar } from "../../components/speaker-avatar";
 import { WorkspaceShell } from "../../components/workspace";
@@ -88,6 +89,24 @@ export function EngagementPage({
 	admin?: boolean;
 	stage?: ReactNode;
 }) {
+	const [projection, setProjection] = useState(false);
+	const [projectionNode, setProjectionNode] = useState<HTMLDivElement | null>(
+		null,
+	);
+	useEffect(() => {
+		const changed = () => {
+			if (!document.fullscreenElement) setProjection(false);
+		};
+		document.addEventListener("fullscreenchange", changed);
+		const escape = (event: KeyboardEvent) => {
+			if (event.key === "Escape") setProjection(false);
+		};
+		window.addEventListener("keydown", escape);
+		return () => {
+			document.removeEventListener("fullscreenchange", changed);
+			window.removeEventListener("keydown", escape);
+		};
+	}, []);
 	const [viewTalkId, setViewTalkId] = useState<number | null>(null);
 	const [authorized, setAuthorized] = useState<boolean | null>(null);
 	useEffect(() => {
@@ -304,6 +323,12 @@ export function EngagementPage({
 			name={data?.event.title}
 			identity={session?.participant?.nickname}
 		>
+			{!admin && (
+				<ReactionOverlay
+					data={data}
+					target={projection ? projectionNode : null}
+				/>
+			)}
 			<div className={`commons-app ${admin ? "operator" : "screen-view"}`}>
 				<div className="page">
 					{admin && authorized !== true ? (
@@ -368,7 +393,32 @@ export function EngagementPage({
 										</label>
 									)}
 									<div className="live-layout">
-										{stage}
+										{stage && (
+											<div
+												className={`projection-stage ${projection ? "is-projecting" : ""}`}
+												ref={setProjectionNode}
+											>
+												{stage}
+												<button
+													type="button"
+													className="projection-toggle"
+													onClick={async () => {
+														if (projection) {
+															if (document.fullscreenElement)
+																await document.exitFullscreen();
+															setProjection(false);
+														} else {
+															setProjection(true);
+															await projectionNode
+																?.requestFullscreen?.()
+																.catch(() => {});
+														}
+													}}
+												>
+													{projection ? "全画面を終了" : "全画面で投影"}
+												</button>
+											</div>
+										)}
 										<section className="live-details" aria-label="現在の発表">
 											{talk ? (
 												<>
