@@ -17,26 +17,7 @@ export const Route = createRootRoute({
 				title: "Workshop Commons",
 			},
 		],
-		links: [
-			{ rel: "preconnect", href: "https://fonts.googleapis.com" },
-			{
-				rel: "preconnect",
-				href: "https://fonts.gstatic.com",
-				crossOrigin: "anonymous",
-			},
-			{
-				rel: "stylesheet",
-				href: "https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap",
-			},
-			{
-				rel: "stylesheet",
-				href: "https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,500,1,0&icon_names=add,arrow_forward,delete,edit,error,keyboard_arrow_down,keyboard_arrow_up,pause,play_arrow,stop,wifi_off&display=block",
-			},
-			{
-				rel: "stylesheet",
-				href: appCss,
-			},
-		],
+		links: [{ rel: "stylesheet", href: appCss }],
 	}),
 	shellComponent: RootDocument,
 });

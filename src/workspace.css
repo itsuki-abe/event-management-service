@@ -753,3 +753,17 @@ textarea {
 		padding-inline: 12px;
 	}
 }
+
+/* Shared decorative avatars: preserve live speaker labels and reserve image space. */
+.wc-speaker-avatar {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+	border-radius: 50%;
+}
+.wc-initial:has(.wc-speaker-avatar),
+.initial:has(.wc-speaker-avatar) {
+	overflow: hidden;
+	padding: 0;
+}

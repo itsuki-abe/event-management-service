@@ -6,7 +6,7 @@ import {
 	type LiveSnapshot,
 	liveSnapshotSchema,
 } from "../lib/lt";
-
+import { SpeakerAvatar } from "./speaker-avatar";
 import { WorkspaceShell } from "./workspace";
 
 type Mode = "audience" | "admin" | "screen" | "speaker";
@@ -171,7 +171,7 @@ function Initial({ talk }: { talk: Talk }) {
 			className={`initial ${talk.id % 2 ? "" : "peach"}`}
 			aria-hidden="true"
 		>
-			{Array.from(talk.speaker)[0]}
+			<SpeakerAvatar name={talk.speaker} />
 		</span>
 	);
 }

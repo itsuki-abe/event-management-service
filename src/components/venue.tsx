@@ -131,7 +131,7 @@ export function TeamPage({ eventId }: { eventId: string }) {
 					</h1>
 					<img
 						className="wc-hero-image"
-						src="/images/workshop-commons-hero.png"
+						src="/assets/commons/collaboration.png"
 						alt="4人がテーブルを囲み共同制作しているイラスト"
 					/>
 					<p>

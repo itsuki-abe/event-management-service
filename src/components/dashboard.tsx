@@ -14,6 +14,7 @@ import {
 	liveSnapshotSchema,
 } from "../lib/lt";
 import { type Participation, participationApi } from "../lib/participation";
+import { SpeakerAvatar } from "./speaker-avatar";
 import { WorkspaceShell } from "./workspace";
 
 type Guide = { id: number; category: string; title: string; content: string };
@@ -116,10 +117,10 @@ export function Dashboard() {
 					</div>
 					<img
 						className="wc-hero-image"
-						src="/images/workshop-commons-hero.png"
+						src="/assets/commons/collaboration.png"
 						alt="4人がテーブルを囲み共同制作しているイラスト"
-						width={1916}
-						height={821}
+						width={1774}
+						height={887}
 					/>
 					<h1>LTを楽しもう</h1>
 					<p>
@@ -158,7 +159,7 @@ export function Dashboard() {
 						</h2>
 						<div className="wc-row">
 							<span className="wc-initial">
-								{current?.speaker.slice(0, 1) ?? "W"}
+								{current ? <SpeakerAvatar name={current.speaker} /> : "W"}
 							</span>
 							<div>
 								<strong>{current?.speaker ?? "まもなく、ここから。"}</strong>
