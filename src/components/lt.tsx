@@ -7,6 +7,7 @@ import {
 	Hand,
 	Lightbulb,
 	type LucideIcon,
+	Maximize,
 	Pause,
 	Pencil,
 	Play,
@@ -412,7 +413,7 @@ function SpeakerView({ data, connected, now, current }: ViewProps) {
 						<div className="row between">
 							<h2>画面共有</h2>
 							{share.stream ? (
-								<span className={`badge ${projecting ? "blue" : "green"}`}>
+								<span className={`badge ${projecting ? "blue" : "yellow"}`}>
 									{projecting ? "投影中" : "共有準備完了"}
 								</span>
 							) : (
@@ -497,8 +498,22 @@ function ScreenView({ data, connected, current }: ViewProps) {
 	);
 	const onStage = shares?.find((share) => share.live) ?? shares?.[0];
 	const stream = useShareViewer(onStage);
+	const stage = useRef<HTMLElement>(null);
 	return (
-		<section className="screen-stage" aria-label="発表者の共有画面">
+		<section ref={stage} className="screen-stage" aria-label="発表者の共有画面">
+			<button
+				type="button"
+				className="screen-fullscreen"
+				aria-label="フルスクリーン"
+				title="フルスクリーン"
+				onClick={() =>
+					document.fullscreenElement
+						? void document.exitFullscreen()
+						: void stage.current?.requestFullscreen()
+				}
+			>
+				<Icon icon={Maximize} size={18} />
+			</button>
 			{stream ? (
 				<ShareVideo stream={stream} label="発表者の画面" />
 			) : (
@@ -554,7 +569,6 @@ function AdminView({
 			...extra,
 		} as LiveAction);
 	const live = current?.status === "running" || current?.status === "paused";
-	const sourceTalk = current?.status === "pending" ? current : next;
 
 	return (
 		<>
@@ -564,7 +578,7 @@ function AdminView({
 						発表者画面
 					</a>
 					<a href="/screen" target="_blank" rel="noreferrer">
-						画面共有・リアクション
+						会場スクリーン（プロジェクター用）
 					</a>
 				</nav>
 			</div>
@@ -648,6 +662,7 @@ function AdminView({
 													{talk.status === "pending"
 														? minutes(talk.durationSeconds)
 														: statusLabels[talk.status]}
+													{talk.id === current?.id && " ・会場に投影"}
 												</small>
 											</span>
 										</button>
@@ -827,64 +842,72 @@ function AdminView({
 						)}
 					</section>
 
-					<ShareSource
-						data={data}
-						talk={sourceTalk}
-						standby={sourceTalk === current}
-					/>
+					<ProjectionPanel data={data} current={current} next={next} />
 				</div>
 			)}
 		</>
 	);
 }
 
-function ShareSource({
+function ProjectionPanel({
 	data,
-	talk,
-	standby,
+	current,
+	next,
 }: {
 	data: LiveSnapshot;
-	talk: Talk | undefined;
-	standby: boolean;
+	current: Talk | undefined;
+	next: Talk | undefined;
 }) {
-	const share = data.shares.find(
-		(item) => item.participantId === talk?.speakerId && item.live,
+	// Same choice as ScreenView, so this preview matches the venue screen.
+	const shares = data.shares.filter(
+		(item) => item.participantId === current?.speakerId,
 	);
+	const share = shares.find((item) => item.live) ?? shares[0];
 	const stream = useShareViewer(share);
-	const onStage = standby && Boolean(share);
+	const nextReady = data.shares.some(
+		(item) => item.participantId === next?.speakerId && item.live,
+	);
 	return (
-		<aside className="next-source" aria-label="発表者の共有">
-			<span className="eyebrow">
-				{standby ? "選択中の発表者の共有" : "次の発表者の準備"}
-			</span>
-			{talk ? (
+		<aside className="next-source" aria-label="会場スクリーン">
+			<span className="eyebrow">会場スクリーンに映っているもの</span>
+			<div className="slide-preview">
+				{stream ? (
+					<ShareVideo stream={stream} label="会場スクリーンの映像" />
+				) : (
+					<small>
+						{!current
+							? "発表が選ばれていません"
+							: share?.live
+								? "プレビューを接続しています…"
+								: share
+									? "共有が切断されました"
+									: `${current.speaker}さんの共有を待っています`}
+					</small>
+				)}
+			</div>
+			{current && (
+				<p className="row">
+					<span
+						className={`badge ${share?.live ? "blue" : share ? "red" : "gray"}`}
+					>
+						{share?.live ? "投影中" : share ? "切断" : "共有待ち"}
+					</span>
+					<strong>{current.speaker}さんの画面</strong>
+				</p>
+			)}
+			<p className="step-help">
+				映るのは、発表一覧で選んだ発表の発表者が共有した画面です。映す人を変えるときは、発表一覧で発表を選び直してください（発表中は終了してから）。
+			</p>
+			{next && (
 				<>
-					<h3>
-						{talk.speaker}
-						<span>{talk.title}</span>
-					</h3>
-					<div className="slide-preview">
-						{stream ? (
-							<ShareVideo stream={stream} label={`${talk.speaker}さんの共有`} />
-						) : (
-							<small>
-								{share
-									? "プレビューを接続しています…"
-									: "発表者の共有を待っています"}
-							</small>
-						)}
-					</div>
-					{share && (
-						<span className={`badge ${onStage ? "blue" : "green"}`}>
-							{onStage ? "投影中" : "共有準備完了"}
+					<span className="eyebrow">次の発表者</span>
+					<p className="row">
+						<span className={`badge ${nextReady ? "yellow" : "gray"}`}>
+							{nextReady ? "共有準備完了" : "未共有"}
 						</span>
-					)}
-					<p className="step-help">
-						発表を選ぶと、その発表者の共有が視聴ページに自動で映ります。
+						<strong>{next.speaker}さん</strong>
 					</p>
 				</>
-			) : (
-				<p className="small muted">次の発表はありません。</p>
 			)}
 		</aside>
 	);

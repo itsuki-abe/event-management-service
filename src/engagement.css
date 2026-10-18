@@ -591,6 +591,25 @@
 	display: grid;
 	place-items: center;
 }
+.screen-stage:fullscreen {
+	border-radius: 0;
+}
+.screen-fullscreen {
+	position: absolute;
+	top: 10px;
+	right: 10px;
+	z-index: 1;
+	display: grid;
+	place-items: center;
+	width: 36px;
+	height: 36px;
+	padding: 0;
+	color: white;
+	background: rgb(0 0 0 / 0.45);
+	border: 0;
+	border-radius: 8px;
+	cursor: pointer;
+}
 .screen-stage .share-video {
 	width: 100%;
 	height: 100%;
