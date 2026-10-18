@@ -5,11 +5,11 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { ReactionOverlay } from "./ReactionOverlay";
 import { OrganizerAccess } from "../../components/organizer-access";
 import { SpeakerAvatar } from "../../components/speaker-avatar";
 import { WorkspaceShell } from "../../components/workspace";
 import { type Participation, participationApi } from "../../lib/participation";
+import { ReactionOverlay } from "./ReactionOverlay";
 import {
 	type EngagementSnapshot,
 	type ReactionKind,
@@ -98,13 +98,13 @@ export function EngagementPage({
 			if (!document.fullscreenElement) setProjection(false);
 		};
 		document.addEventListener("fullscreenchange", changed);
-		const escape = (event: KeyboardEvent) => {
+		const handleEscape = (event: KeyboardEvent) => {
 			if (event.key === "Escape") setProjection(false);
 		};
-		window.addEventListener("keydown", escape);
+		window.addEventListener("keydown", handleEscape);
 		return () => {
 			document.removeEventListener("fullscreenchange", changed);
-			window.removeEventListener("keydown", escape);
+			window.removeEventListener("keydown", handleEscape);
 		};
 	}, []);
 	const [viewTalkId, setViewTalkId] = useState<number | null>(null);
