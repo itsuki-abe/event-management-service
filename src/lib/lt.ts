@@ -4,6 +4,7 @@ const talkSchema = z.object({
 	id: z.number().int().positive(),
 	title: z.string(),
 	speaker: z.string(),
+	speakerId: z.number().int().positive(),
 	sortOrder: z.number().int(),
 	durationSeconds: z.number().int().positive(),
 	status: z.enum(["pending", "running", "paused", "ended"]),
@@ -17,6 +18,18 @@ export const liveSnapshotSchema = z.object({
 		.nullable(),
 	talks: z.array(talkSchema),
 	selectedTalkId: z.number().int().positive().nullable(),
+	shares: z.array(
+		z.object({
+			sessionId: z.number().int().positive(),
+			participantId: z.number().int().positive(),
+			startedAt: z.number(),
+			live: z.boolean(),
+		}),
+	),
+	// Speaker candidates; only sent to organizers.
+	participants: z
+		.array(z.object({ id: z.number().int().positive(), nickname: z.string() }))
+		.optional(),
 	revision: z.string(),
 	serverNow: z.number(),
 });
@@ -34,7 +47,7 @@ export const liveActionSchema = z.discriminatedUnion("action", [
 		revision,
 		id: talkId.optional(),
 		title: z.string().trim().min(1).max(200),
-		speaker: z.string().trim().min(1).max(100),
+		speakerId: z.number().int().positive(),
 		durationSeconds: z.number().int().min(1).max(86400),
 	}),
 	z.object({ action: z.literal("deleteTalk"), revision, talkId }),
@@ -52,6 +65,23 @@ export const liveActionSchema = z.discriminatedUnion("action", [
 	z.object({ action: z.literal("next"), revision, talkId }),
 	z.object({ action: z.literal("reset"), revision, talkId }),
 ]);
+
+const sdp = z.string().min(1).max(20000);
+export const shareActionSchema = z.discriminatedUnion("action", [
+	z.object({ action: z.literal("status") }),
+	z.object({ action: z.literal("ice") }),
+	z.object({ action: z.literal("prepare") }),
+	z.object({ action: z.literal("poll") }),
+	z.object({ action: z.literal("answer"), id: z.uuid(), sdp }),
+	z.object({ action: z.literal("stop") }),
+	z.object({
+		action: z.literal("offer"),
+		sessionId: z.number().int().positive(),
+		sdp,
+	}),
+	z.object({ action: z.literal("receive"), id: z.uuid() }),
+]);
+export type ShareAction = z.infer<typeof shareActionSchema>;
 
 export type LiveSnapshot = z.infer<typeof liveSnapshotSchema>;
 export type LiveAction = z.infer<typeof liveActionSchema>;

@@ -21,6 +21,7 @@ import { Route as ApiEventsRouteImport } from './routes/api.events'
 import { Route as ApiHealthRouteImport } from './routes/api.health'
 import { Route as ApiLoginRouteImport } from './routes/api.login'
 import { Route as ApiLtRouteImport } from './routes/api.lt'
+import { Route as ApiShareRouteImport } from './routes/api.share'
 import { Route as EventsEventIdRouteImport } from './routes/events.$eventId'
 import { Route as EventsEventIdConnectRouteImport } from './routes/events.$eventId_.connect'
 import { Route as EventsEventIdGuideRouteImport } from './routes/events.$eventId_.guide'
@@ -88,6 +89,11 @@ const ApiLtRoute = ApiLtRouteImport.update({
   path: '/api/lt',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiShareRoute = ApiShareRouteImport.update({
+  id: '/api/share',
+  path: '/api/share',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EventsEventIdRoute = EventsEventIdRouteImport.update({
   id: '/events/$eventId',
   path: '/events/$eventId',
@@ -132,6 +138,7 @@ export interface FileRoutesByFullPath {
   '/api/health': typeof ApiHealthRoute
   '/api/login': typeof ApiLoginRoute
   '/api/lt': typeof ApiLtRoute
+  '/api/share': typeof ApiShareRoute
   '/events/$eventId': typeof EventsEventIdRoute
   '/events/$eventId/connect': typeof EventsEventIdConnectRoute
   '/events/$eventId/guide': typeof EventsEventIdGuideRoute
@@ -152,6 +159,7 @@ export interface FileRoutesByTo {
   '/api/health': typeof ApiHealthRoute
   '/api/login': typeof ApiLoginRoute
   '/api/lt': typeof ApiLtRoute
+  '/api/share': typeof ApiShareRoute
   '/events/$eventId': typeof EventsEventIdRoute
   '/events/$eventId/connect': typeof EventsEventIdConnectRoute
   '/events/$eventId/guide': typeof EventsEventIdGuideRoute
@@ -173,6 +181,7 @@ export interface FileRoutesById {
   '/api/health': typeof ApiHealthRoute
   '/api/login': typeof ApiLoginRoute
   '/api/lt': typeof ApiLtRoute
+  '/api/share': typeof ApiShareRoute
   '/events/$eventId': typeof EventsEventIdRoute
   '/events/$eventId_/connect': typeof EventsEventIdConnectRoute
   '/events/$eventId_/guide': typeof EventsEventIdGuideRoute
@@ -195,6 +204,7 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/api/login'
     | '/api/lt'
+    | '/api/share'
     | '/events/$eventId'
     | '/events/$eventId/connect'
     | '/events/$eventId/guide'
@@ -215,6 +225,7 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/api/login'
     | '/api/lt'
+    | '/api/share'
     | '/events/$eventId'
     | '/events/$eventId/connect'
     | '/events/$eventId/guide'
@@ -235,6 +246,7 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/api/login'
     | '/api/lt'
+    | '/api/share'
     | '/events/$eventId'
     | '/events/$eventId_/connect'
     | '/events/$eventId_/guide'
@@ -256,6 +268,7 @@ export interface RootRouteChildren {
   ApiHealthRoute: typeof ApiHealthRoute
   ApiLoginRoute: typeof ApiLoginRoute
   ApiLtRoute: typeof ApiLtRoute
+  ApiShareRoute: typeof ApiShareRoute
   EventsEventIdRoute: typeof EventsEventIdRoute
   EventsEventIdConnectRoute: typeof EventsEventIdConnectRoute
   EventsEventIdGuideRoute: typeof EventsEventIdGuideRoute
@@ -349,6 +362,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiLtRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/share': {
+      id: '/api/share'
+      path: '/api/share'
+      fullPath: '/api/share'
+      preLoaderRoute: typeof ApiShareRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/events/$eventId': {
       id: '/events/$eventId'
       path: '/events/$eventId'
@@ -419,6 +439,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiHealthRoute: ApiHealthRoute,
   ApiLoginRoute: ApiLoginRoute,
   ApiLtRoute: ApiLtRoute,
+  ApiShareRoute: ApiShareRoute,
   EventsEventIdRoute: EventsEventIdRoute,
   EventsEventIdConnectRoute: EventsEventIdConnectRoute,
   EventsEventIdGuideRoute: EventsEventIdGuideRoute,

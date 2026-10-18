@@ -55,7 +55,7 @@ function cookieName(eventId: number) {
 	return `event_session_${eventId}`;
 }
 
-async function readSession(
+export async function readSession(
 	database: D1Database,
 	request: Request,
 	eventId: number,
@@ -74,7 +74,7 @@ async function readSession(
 		.first<Session>();
 }
 
-async function ensureSession(
+export async function ensureSession(
 	database: D1Database,
 	request: Request,
 	eventId: number,
