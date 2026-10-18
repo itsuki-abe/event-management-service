@@ -25,6 +25,7 @@ import { Route as ApiLtRouteImport } from './routes/api.lt'
 import { Route as EventsEventIdRouteImport } from './routes/events.$eventId'
 import { Route as EventsEventIdConnectRouteImport } from './routes/events.$eventId_.connect'
 import { Route as EventsEventIdGuideRouteImport } from './routes/events.$eventId_.guide'
+import { Route as EventsEventIdParticipantsRouteImport } from './routes/events.$eventId_.participants'
 import { Route as EventsEventIdQrRouteImport } from './routes/events.$eventId_.qr'
 import { Route as EventsEventIdTeamRouteImport } from './routes/events.$eventId_.team'
 import { Route as ApiEventsEventIdSplatRouteImport } from './routes/api.events.$eventId.$'
@@ -109,6 +110,12 @@ const EventsEventIdGuideRoute = EventsEventIdGuideRouteImport.update({
   path: '/events/$eventId/guide',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EventsEventIdParticipantsRoute =
+  EventsEventIdParticipantsRouteImport.update({
+    id: '/events/$eventId_/participants',
+    path: '/events/$eventId/participants',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const EventsEventIdQrRoute = EventsEventIdQrRouteImport.update({
   id: '/events/$eventId_/qr',
   path: '/events/$eventId/qr',
@@ -142,6 +149,7 @@ export interface FileRoutesByFullPath {
   '/events/$eventId': typeof EventsEventIdRoute
   '/events/$eventId/connect': typeof EventsEventIdConnectRoute
   '/events/$eventId/guide': typeof EventsEventIdGuideRoute
+  '/events/$eventId/participants': typeof EventsEventIdParticipantsRoute
   '/events/$eventId/qr': typeof EventsEventIdQrRoute
   '/events/$eventId/team': typeof EventsEventIdTeamRoute
   '/api/events/$eventId/$': typeof ApiEventsEventIdSplatRoute
@@ -163,6 +171,7 @@ export interface FileRoutesByTo {
   '/events/$eventId': typeof EventsEventIdRoute
   '/events/$eventId/connect': typeof EventsEventIdConnectRoute
   '/events/$eventId/guide': typeof EventsEventIdGuideRoute
+  '/events/$eventId/participants': typeof EventsEventIdParticipantsRoute
   '/events/$eventId/qr': typeof EventsEventIdQrRoute
   '/events/$eventId/team': typeof EventsEventIdTeamRoute
   '/api/events/$eventId/$': typeof ApiEventsEventIdSplatRoute
@@ -185,6 +194,7 @@ export interface FileRoutesById {
   '/events/$eventId': typeof EventsEventIdRoute
   '/events/$eventId_/connect': typeof EventsEventIdConnectRoute
   '/events/$eventId_/guide': typeof EventsEventIdGuideRoute
+  '/events/$eventId_/participants': typeof EventsEventIdParticipantsRoute
   '/events/$eventId_/qr': typeof EventsEventIdQrRoute
   '/events/$eventId_/team': typeof EventsEventIdTeamRoute
   '/api/events/$eventId/$': typeof ApiEventsEventIdSplatRoute
@@ -208,6 +218,7 @@ export interface FileRouteTypes {
     | '/events/$eventId'
     | '/events/$eventId/connect'
     | '/events/$eventId/guide'
+    | '/events/$eventId/participants'
     | '/events/$eventId/qr'
     | '/events/$eventId/team'
     | '/api/events/$eventId/$'
@@ -229,6 +240,7 @@ export interface FileRouteTypes {
     | '/events/$eventId'
     | '/events/$eventId/connect'
     | '/events/$eventId/guide'
+    | '/events/$eventId/participants'
     | '/events/$eventId/qr'
     | '/events/$eventId/team'
     | '/api/events/$eventId/$'
@@ -250,6 +262,7 @@ export interface FileRouteTypes {
     | '/events/$eventId'
     | '/events/$eventId_/connect'
     | '/events/$eventId_/guide'
+    | '/events/$eventId_/participants'
     | '/events/$eventId_/qr'
     | '/events/$eventId_/team'
     | '/api/events/$eventId/$'
@@ -272,6 +285,7 @@ export interface RootRouteChildren {
   EventsEventIdRoute: typeof EventsEventIdRoute
   EventsEventIdConnectRoute: typeof EventsEventIdConnectRoute
   EventsEventIdGuideRoute: typeof EventsEventIdGuideRoute
+  EventsEventIdParticipantsRoute: typeof EventsEventIdParticipantsRoute
   EventsEventIdQrRoute: typeof EventsEventIdQrRoute
   EventsEventIdTeamRoute: typeof EventsEventIdTeamRoute
 }
@@ -390,6 +404,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EventsEventIdGuideRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/events/$eventId_/participants': {
+      id: '/events/$eventId_/participants'
+      path: '/events/$eventId/participants'
+      fullPath: '/events/$eventId/participants'
+      preLoaderRoute: typeof EventsEventIdParticipantsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/events/$eventId_/qr': {
       id: '/events/$eventId_/qr'
       path: '/events/$eventId/qr'
@@ -443,6 +464,7 @@ const rootRouteChildren: RootRouteChildren = {
   EventsEventIdRoute: EventsEventIdRoute,
   EventsEventIdConnectRoute: EventsEventIdConnectRoute,
   EventsEventIdGuideRoute: EventsEventIdGuideRoute,
+  EventsEventIdParticipantsRoute: EventsEventIdParticipantsRoute,
   EventsEventIdQrRoute: EventsEventIdQrRoute,
   EventsEventIdTeamRoute: EventsEventIdTeamRoute,
 }

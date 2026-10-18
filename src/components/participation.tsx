@@ -14,6 +14,7 @@ import {
 	participationApi,
 } from "../lib/participation";
 import { type WorkspaceSection, WorkspaceShell } from "./workspace";
+import { XProfileLink } from "./x-profile-link";
 
 const errorMessage = (error: unknown) =>
 	error instanceof Error
@@ -64,7 +65,7 @@ function ProfileForm({
 }: {
 	participant?: Participant | null;
 	busy: boolean;
-	onSave: (body: { nickname: string; profile: string }) => void;
+	onSave: (body: { nickname: string; profile: string; xUrl: string }) => void;
 }) {
 	function submit(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
@@ -72,13 +73,14 @@ function ProfileForm({
 		onSave({
 			nickname: String(form.get("nickname") ?? ""),
 			profile: String(form.get("profile") ?? ""),
+			xUrl: String(form.get("xUrl") ?? ""),
 		});
 	}
 	return (
 		<form
 			onSubmit={submit}
 			className="stack"
-			key={`${participant?.id}-${participant?.nickname}-${participant?.profile}`}
+			key={`${participant?.id}-${participant?.nickname}-${participant?.profile}-${participant?.xUrl}`}
 		>
 			<label>
 				表示名 <span className="required">必須</span>
@@ -104,6 +106,27 @@ function ProfileForm({
 					ほかの参加者に伝えたい内容を、500文字以内で。
 				</span>
 			</label>
+			<label>
+				Xのプロフィール <span className="optional">任意</span>
+				<input
+					name="xUrl"
+					type="text"
+					inputMode="url"
+					autoComplete="off"
+					autoCapitalize="none"
+					spellCheck={false}
+					maxLength={200}
+					defaultValue={participant?.xUrl ?? ""}
+					placeholder="https://x.com/username または @username"
+					aria-describedby="x-profile-note"
+				/>
+				<span className="field-note" id="x-profile-note">
+					入力すると、このイベントの参加者一覧に表示されます。あとから編集・削除できます。
+				</span>
+			</label>
+			<p className="field-note">
+				表示名と自己紹介は、このイベントの参加者に公開されます。
+			</p>
 			<button type="submit" disabled={busy}>
 				{busy
 					? "保存しています…"
@@ -294,7 +317,11 @@ export function ParticipationPage({
 		}
 	}
 
-	function saveProfile(body: { nickname: string; profile: string }) {
+	function saveProfile(body: {
+		nickname: string;
+		profile: string;
+		xUrl: string;
+	}) {
 		void run(async () => {
 			setData(
 				await participationApi<Participation>(
@@ -476,6 +503,9 @@ export function ParticipationPage({
 							? "このPCも、同じ参加者として利用できます。"
 							: "参加登録が完了しました。続けてPC／Macを接続できます。"}
 					</p>
+					<a className="back-link" href={`/events/${eventId}/participants`}>
+						参加者一覧で、今日の仲間を見つける →
+					</a>
 					{preview ? (
 						<section
 							className="card confirmation"
@@ -588,6 +618,12 @@ export function ParticipationPage({
 									{data.participant.profile ||
 										"自己紹介はまだ登録されていません。"}
 								</p>
+								{data.participant.xUrl && (
+									<XProfileLink
+										url={data.participant.xUrl}
+										nickname={data.participant.nickname}
+									/>
+								)}
 							</>
 						)}
 					</section>

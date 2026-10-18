@@ -1,0 +1,1 @@
+ALTER TABLE `participants` ADD `x_url` text;

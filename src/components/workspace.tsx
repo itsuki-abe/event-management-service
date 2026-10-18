@@ -1,4 +1,5 @@
 import {
+	ContactRound,
 	Home,
 	Laptop,
 	MapPin,
@@ -18,6 +19,7 @@ export type WorkspaceSection =
 	| "admin"
 	| "qr"
 	| "guide"
+	| "participants"
 	| "team";
 
 export function WorkspaceShell({
@@ -45,6 +47,12 @@ export function WorkspaceShell({
 		{ id: "guide", label: "会場", href: `${eventPath}/guide`, icon: MapPin },
 		{ id: "live", label: "ライブ", href: "/live", icon: MessageCircle },
 		{ id: "team", label: "チーム", href: `${eventPath}/team`, icon: Users },
+		{
+			id: "participants",
+			label: "参加者",
+			href: `${eventPath}/participants`,
+			icon: ContactRound,
+		},
 	];
 	function items() {
 		return navigation.map((item) => (

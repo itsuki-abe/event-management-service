@@ -40,6 +40,7 @@ export const participants = sqliteTable(
 			.notNull()
 			.default("participant"),
 		profile: text(),
+		xUrl: text("x_url"),
 		...timestamps(),
 	},
 	(t) => [
