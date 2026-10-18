@@ -74,7 +74,7 @@ export async function postShare(request: Request) {
 	}
 
 	const session =
-		action.action === "status"
+		action.action === "status" || action.action === "prepare"
 			? await ensureSession(env.DB, request, event.id, headers)
 			: await readSession(env.DB, request, event.id);
 	if (!session) return fail("ページを開き直してください。", 401);
