@@ -346,3 +346,83 @@ export async function handleEngagement(request: Request) {
 		);
 	}
 }
+
+// Provision and switch sample talks only in an explicitly enabled review Site.
+// Never put sample data or backfills in hosted schema migrations.
+export async function handleReviewSetup(request: Request) {
+	try {
+		await requireOrganizer(request);
+		if (
+			(env as typeof env & { ENGAGEMENT_REVIEW_MODE?: string })
+				.ENGAGEMENT_REVIEW_MODE !== "enabled"
+		)
+			throw new ApiError(
+				404,
+				"この環境では確認用データの操作を利用できません。",
+			);
+		if (request.method === "GET") return json({ enabled: true });
+		const origin = request.headers.get("origin");
+		if (origin && origin !== new URL(request.url).origin)
+			throw new ApiError(403, "別サイトからの操作はできません。");
+		if (!request.headers.get("content-type")?.startsWith("application/json"))
+			throw new ApiError(415, "JSONで送信してください。");
+		if (request.method === "POST") {
+			await db.batch([
+				db
+					.insert(events)
+					.values({ id: 1, name: "Workshop Commons / 交流機能レビュー" })
+					.onConflictDoNothing(),
+				db
+					.insert(participants)
+					.values([
+						{ id: 1, eventId: 1, nickname: "佐藤 あかり" },
+						{ id: 2, eventId: 1, nickname: "田中 悠" },
+					])
+					.onConflictDoNothing(),
+				db
+					.insert(talks)
+					.values([
+						{
+							id: 1,
+							eventId: 1,
+							speakerId: 1,
+							title: "小さな自動化から始めよう",
+							sortOrder: 1,
+							durationSeconds: 300,
+						},
+						{
+							id: 2,
+							eventId: 1,
+							speakerId: 2,
+							title: "チームでつくる開発文化",
+							sortOrder: 2,
+							durationSeconds: 300,
+						},
+					])
+					.onConflictDoNothing(),
+				db
+					.insert(eventLiveState)
+					.values({ eventId: 1, selectedTalkId: 1 })
+					.onConflictDoNothing(),
+			]);
+			return json({ ok: true, eventId: 1 });
+		}
+		const input = (await request.json()) as { talkId?: unknown };
+		const talkId = positiveId(input?.talkId);
+		const [talk] = await db
+			.select({ id: talks.id })
+			.from(talks)
+			.where(and(eq(talks.id, talkId), eq(talks.eventId, 1)));
+		if (!talk)
+			throw new ApiError(404, "確認用イベントの発表が見つかりません。");
+		await db
+			.update(eventLiveState)
+			.set({ selectedTalkId: talkId })
+			.where(eq(eventLiveState.eventId, 1));
+		return json({ ok: true });
+	} catch (error) {
+		if (error instanceof ApiError)
+			return json({ error: error.message }, error.status);
+		return json({ error: "確認用データを操作できませんでした。" }, 500);
+	}
+}

@@ -9,3 +9,6 @@ dist/
 !.env.example
 *.local
 .DS_Store
+
+.sites/
+.sites-runtime/

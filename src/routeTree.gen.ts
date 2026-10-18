@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as ApiEngagementRouteImport } from './routes/api.engagement'
 import { Route as ApiHealthRouteImport } from './routes/api.health'
+import { Route as ApiReviewSetupRouteImport } from './routes/api.review-setup'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -34,18 +35,25 @@ const ApiHealthRoute = ApiHealthRouteImport.update({
   path: '/api/health',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiReviewSetupRoute = ApiReviewSetupRouteImport.update({
+  id: '/api/review-setup',
+  path: '/api/review-setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/api/engagement': typeof ApiEngagementRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/review-setup': typeof ApiReviewSetupRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/api/engagement': typeof ApiEngagementRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/review-setup': typeof ApiReviewSetupRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +61,21 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/api/engagement': typeof ApiEngagementRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/review-setup': typeof ApiReviewSetupRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/api/engagement' | '/api/health'
+  fullPaths:
+    '/' | '/admin' | '/api/engagement' | '/api/health' | '/api/review-setup'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/api/engagement' | '/api/health'
-  id: '__root__' | '/' | '/admin' | '/api/engagement' | '/api/health'
+  to: '/' | '/admin' | '/api/engagement' | '/api/health' | '/api/review-setup'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/api/engagement'
+    | '/api/health'
+    | '/api/review-setup'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,6 +83,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   ApiEngagementRoute: typeof ApiEngagementRoute
   ApiHealthRoute: typeof ApiHealthRoute
+  ApiReviewSetupRoute: typeof ApiReviewSetupRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -99,6 +116,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/review-setup': {
+      id: '/api/review-setup'
+      path: '/api/review-setup'
+      fullPath: '/api/review-setup'
+      preLoaderRoute: typeof ApiReviewSetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -107,16 +131,8 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   ApiEngagementRoute: ApiEngagementRoute,
   ApiHealthRoute: ApiHealthRoute,
+  ApiReviewSetupRoute: ApiReviewSetupRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

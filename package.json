@@ -21,7 +21,9 @@
 		"db:migrate:remote": "wrangler d1 migrations apply DB --remote",
 		"test:smoke": "node scripts/smoke.mjs",
 		"db:seed": "wrangler d1 execute DB --local --file scripts/seed-engagement.sql",
-		"test:engagement": "node scripts/engagement-smoke.mjs"
+		"test:engagement": "node scripts/engagement-smoke.mjs",
+		"sites:prepare": "node scripts/prepare-sites.mjs",
+		"db:generate:sites": "drizzle-kit generate --config drizzle.sites.config.ts"
 	},
 	"dependencies": {
 		"@fontsource/material-symbols-rounded": "^5.3.9",

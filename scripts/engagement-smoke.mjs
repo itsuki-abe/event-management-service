@@ -12,12 +12,16 @@ if (!process.env.ENGAGEMENT_ADMIN_TOKEN) {
 }
 const token = process.env.ENGAGEMENT_ADMIN_TOKEN;
 assert.ok(token, "Set ENGAGEMENT_ADMIN_TOKEN or create .dev.vars first.");
+const accessHeaders = process.env.SITES_SERVICE_TOKEN
+	? { "OAI-Sites-Authorization": `Bearer ${process.env.SITES_SERVICE_TOKEN}` }
+	: {};
 let cookie = "";
 async function request(method, payload, { admin = false, status = 200 } = {}) {
 	const response = await fetch(new URL("/api/engagement", baseUrl), {
 		method,
 		headers: {
 			"Content-Type": "application/json",
+			...accessHeaders,
 			Cookie: cookie,
 			...(admin ? { Authorization: `Bearer ${token}` } : {}),
 		},
@@ -35,7 +39,12 @@ async function read(talkId = 1, admin = false) {
 			`/api/engagement?eventId=1&talkId=${talkId}${admin ? "&admin=1" : ""}`,
 			baseUrl,
 		),
-		{ headers: admin ? { Authorization: `Bearer ${token}` } : {} },
+		{
+			headers: {
+				...accessHeaders,
+				...(admin ? { Authorization: `Bearer ${token}` } : {}),
+			},
+		},
 	);
 	assert.equal(response.status, 200);
 	return response.json();
@@ -51,6 +60,7 @@ try {
 	await request("PATCH", settings, { status: 403 });
 	const denied = await fetch(
 		new URL("/api/engagement?eventId=1&admin=1", baseUrl),
+		{ headers: accessHeaders },
 	);
 	assert.equal(denied.status, 403);
 	await request(
@@ -124,7 +134,11 @@ try {
 		Array.from({ length: 4 }, () =>
 			fetch(new URL("/api/engagement", baseUrl), {
 				method: "POST",
-				headers: { "Content-Type": "application/json", Cookie: cookie },
+				headers: {
+					"Content-Type": "application/json",
+					...accessHeaders,
+					Cookie: cookie,
+				},
 				body: JSON.stringify({
 					eventId: 1,
 					talkId: 1,
@@ -189,6 +203,7 @@ try {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
+			...accessHeaders,
 			Origin: "https://other.example",
 		},
 		body: JSON.stringify({

@@ -159,3 +159,7 @@ body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.6 "Z
   .commons-app .event-date { display: none; }
   .commons-app .reaction { padding: 16px; gap: 12px; }
 }
+
+.commons-app .review-tools { border: 1px solid var(--line); border-radius: 9px; padding: 18px 20px; margin-bottom: 26px; }
+.commons-app .review-tools .subtle-tip { margin-top: 10px; }
+.commons-app .review-talks { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; }

@@ -140,3 +140,27 @@ bun run test:engagement
 ```
 
 4種類の送信・別リクエストからの取得・発表ごとの分離・連打制限・200文字と表示名の検証・受付停止／再開・非表示・運営認証・別サイトからの送信拒否を確認します。
+
+## Sitesの確認環境
+
+Sites向け変更は交流機能のPRに依存する別ブランチで管理します。`.openai/hosting.json` の `project_id` は確認用SiteのID、`d1: "DB"` はSitesが作成する専用DBのバインディングです。GitHubの開発DB・Cloudflareの既存DBとは別です。
+
+```sh
+bun run db:generate:sites # 共通スキーマを変更したときのみ
+bun run sites:prepare
+```
+
+`sites:prepare` は、秘密値・ローカルDB・GitHubのGit履歴を含めず、`.sites/commons-review` に公開用ソースを作ります。Sitesのソース同期・ビルド・パッケージ・公開は、このコピー内でSitesプラグインのヘルパーを使います。GitHubのoriginは変更しません。
+
+Sitesのマイグレーションは `sites/drizzle` の独立した履歴です。既存DB用の移行・バックフィルは再利用せず、新しい確認DBに現在の共通スキーマを作成します。将来のスキーマ変更時には、通常の `db:generate` と `db:generate:sites` の両方で追加マイグレーションを生成してください。適用済みの履歴は変更しません。サンプルデータはマイグレーションに含めません。
+
+Sitesの実行環境には次を設定します。秘密値はソースやhosting.jsonへ記載しません。
+
+- `ENGAGEMENT_ADMIN_TOKEN`（secret）：運営画面で使用するキー。
+- `ENGAGEMENT_REVIEW_MODE=enabled`：確認用データの作成・発表切替を有効化。通常のイベント環境では設定しないでください。
+
+初回は `/admin?eventId=1` で運営用キーを入力し、「確認用データを準備する」を押します。既存データは上書きしません。運営画面の「動作確認用」から発表を切り替え、別端末の参加者画面で下書きの保持を確認できます。`/api/review-setup` はGET・POST・PATCHのすべてで運営キーを要求し、確認モードが無効なら使用できません。初期データと切り替えの対象はイベント1です。
+
+Siteは初期状態では所有者のみが開ける非公開設定です。Sitesの認証とアプリの運営キーは別の役割です。共有範囲を変更する場合は、確認用データを扱う人と運営キーを渡す人を区別してください。
+
+ホスト先でも `scripts/review-smoke.mjs`、`test:smoke`、`test:engagement` を実行できます。所有者のみのSiteをスクリプトから確認する場合は、Sitesから取得したサービスアクセストークンを `SITES_SERVICE_TOKEN` に、運営キーを `ENGAGEMENT_ADMIN_TOKEN` に一時的に渡します。トークンはURL・引数・ソース・ログへ記載しません。

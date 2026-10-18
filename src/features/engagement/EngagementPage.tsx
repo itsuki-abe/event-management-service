@@ -82,6 +82,22 @@ export function EngagementPage({
 	const [viewTalkId, setViewTalkId] = useState<number | null>(null);
 	const [tokenInput, setTokenInput] = useState("");
 	const [token, setToken] = useState("");
+	const [reviewEnabled, setReviewEnabled] = useState(false);
+	useEffect(() => {
+		let active = true;
+		setReviewEnabled(false);
+		if (admin && token)
+			void api<{ enabled: boolean }>("/api/review-setup", {
+				headers: { Authorization: `Bearer ${token}` },
+			})
+				.then((result) => {
+					if (active) setReviewEnabled(result.enabled);
+				})
+				.catch(() => {});
+		return () => {
+			active = false;
+		};
+	}, [admin, token]);
 	const { data, error, refresh } = useSnapshot(
 		eventId,
 		viewTalkId,
@@ -186,6 +202,35 @@ export function EngagementPage({
 		} catch (cause) {
 			setMessage(
 				cause instanceof Error ? cause.message : "変更できませんでした。",
+			);
+		} finally {
+			setSending(false);
+		}
+	}
+	async function reviewAction(
+		method: "POST" | "PATCH",
+		payload: Record<string, unknown> = {},
+	) {
+		setSending(true);
+		setMessage("");
+		try {
+			await api("/api/review-setup", {
+				method,
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${token}`,
+				},
+				body: JSON.stringify(payload),
+			});
+			setMessage(
+				method === "POST"
+					? "確認用データを準備しました。"
+					: "確認用の発表を切り替えました。",
+			);
+			await refresh();
+		} catch (cause) {
+			setMessage(
+				cause instanceof Error ? cause.message : "操作に失敗しました。",
 			);
 		} finally {
 			setSending(false);
@@ -340,6 +385,16 @@ export function EngagementPage({
 								<Icon name="wifi_off" />
 								<div>
 									<strong>再接続中です</strong>
+									{admin && reviewEnabled && (
+										<button
+											className="text-button"
+											type="button"
+											disabled={sending}
+											onClick={() => void reviewAction("POST")}
+										>
+											確認用データを準備する
+										</button>
+									)}
 									<p>{error}</p>
 									<p>
 										最後に取得した情報を表示しています。自動で再接続します。
@@ -400,6 +455,30 @@ export function EngagementPage({
 											))}
 										</select>
 									</label>
+								)}
+								{admin && reviewEnabled && eventId === 1 && (
+									<section className="review-tools">
+										<span className="badge blue">動作確認用</span>
+										<p className="subtle-tip">
+											参加者画面を別の端末で開き、発表を切り替えると下書きの保持を確認できます。
+										</p>
+										<div className="review-talks">
+											{data.talks.map((item) => (
+												<button
+													className="secondary"
+													type="button"
+													key={item.id}
+													aria-pressed={data.selectedTalkId === item.id}
+													disabled={sending || data.selectedTalkId === item.id}
+													onClick={() =>
+														void reviewAction("PATCH", { talkId: item.id })
+													}
+												>
+													{item.speakerName}さんの発表に切り替え
+												</button>
+											))}
+										</div>
+									</section>
 								)}
 								<div className="live-layout">
 									<section className="live-details">
