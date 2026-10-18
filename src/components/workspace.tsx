@@ -30,6 +30,7 @@ export function WorkspaceShell({
 	name,
 	identity,
 	bare = false,
+	registrationOnly = false,
 }: {
 	children: React.ReactNode;
 	section?: WorkspaceSection;
@@ -37,6 +38,7 @@ export function WorkspaceShell({
 	name?: string;
 	identity?: string;
 	bare?: boolean;
+	registrationOnly?: boolean;
 }) {
 	if (bare) return children;
 	const eventPath = `/events/${encodeURIComponent(eventId)}`;
@@ -93,7 +95,7 @@ export function WorkspaceShell({
 	}
 
 	return (
-		<div className="wc-app">
+		<div className={`wc-app${registrationOnly ? " wc-registration-only" : ""}`}>
 			<a className="wc-skip" href="#main-content">
 				本文へスキップ
 			</a>
@@ -101,36 +103,42 @@ export function WorkspaceShell({
 				<a href="/" className="wc-brand">
 					WORKSHOP COMMONS<small>つくる、つながる</small>
 				</a>
-				<nav className="wc-desktop-nav" aria-label="メインメニュー">
-					{items(true)}
-				</nav>
-				<div className="wc-header-tools">
-					<span className="wc-event-name">{name}</span>
-					<a
-						className="wc-icon-link"
-						href={`${eventPath}/connect`}
-						aria-label="PC／Macを接続"
-						title="PC／Macを接続"
-					>
-						<Laptop size={22} aria-hidden="true" />
-					</a>
-					<a
-						className="wc-icon-link wc-profile-link"
-						href={eventPath}
-						aria-label={
-							identity
-								? `${identity}さんのプロフィール`
-								: "参加登録・プロフィール"
-						}
-						title="参加登録・プロフィール"
-					>
-						{identity ? (
-							<span className="wc-profile-initial">{identity.slice(0, 1)}</span>
-						) : (
-							<UserRound size={22} aria-hidden="true" />
-						)}
-					</a>
-				</div>
+				{!registrationOnly && (
+					<>
+						<nav className="wc-desktop-nav" aria-label="メインメニュー">
+							{items(true)}
+						</nav>
+						<div className="wc-header-tools">
+							<span className="wc-event-name">{name}</span>
+							<a
+								className="wc-icon-link"
+								href={`${eventPath}/connect`}
+								aria-label="PC／Macを接続"
+								title="PC／Macを接続"
+							>
+								<Laptop size={22} aria-hidden="true" />
+							</a>
+							<a
+								className="wc-icon-link wc-profile-link"
+								href={eventPath}
+								aria-label={
+									identity
+										? `${identity}さんのプロフィール`
+										: "参加登録・プロフィール"
+								}
+								title="参加登録・プロフィール"
+							>
+								{identity ? (
+									<span className="wc-profile-initial">
+										{identity.slice(0, 1)}
+									</span>
+								) : (
+									<UserRound size={22} aria-hidden="true" />
+								)}
+							</a>
+						</div>
+					</>
+				)}
 			</header>
 			<main id="main-content" className="wc-page">
 				{["admin", "comments"].includes(section) && (
@@ -159,21 +167,25 @@ export function WorkspaceShell({
 					</nav>
 				)}
 				{children}
-				<footer className="wc-footer">
-					<span>WORKSHOP COMMONS</span>
-					<div>
-						<a href={`${eventPath}/qr`}>
-							<QrCode size={15} aria-hidden="true" />
-							参加QR
-						</a>
-						<a href="/speaker">発表者</a>
-						<a href="/admin">運営</a>
-					</div>
-				</footer>
+				{!registrationOnly && (
+					<footer className="wc-footer">
+						<span>WORKSHOP COMMONS</span>
+						<div>
+							<a href={`${eventPath}/qr`}>
+								<QrCode size={15} aria-hidden="true" />
+								参加QR
+							</a>
+							<a href="/speaker">発表者</a>
+							<a href="/admin">運営</a>
+						</div>
+					</footer>
+				)}
 			</main>
-			<nav className="wc-bottom-nav" aria-label="参加者メニュー">
-				{items()}
-			</nav>
+			{!registrationOnly && (
+				<nav className="wc-bottom-nav" aria-label="参加者メニュー">
+					{items()}
+				</nav>
+			)}
 		</div>
 	);
 }
