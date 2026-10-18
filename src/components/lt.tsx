@@ -19,6 +19,7 @@ import {
 	WifiOff,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { EngagementPage } from "../features/engagement/EngagementPage";
 import {
 	type ReactionKind,
 	reactionKinds,
@@ -251,22 +252,29 @@ export function LtPage({ mode = "audience" }: { mode?: Mode }) {
 		: "";
 	const view = { ...live, current, next, position };
 
+	if (mode === "screen") {
+		return (
+			<EngagementPage
+				key={data?.event?.id ?? 1}
+				eventId={data?.event?.id ?? 1}
+				stage={<ScreenView {...view} />}
+			/>
+		);
+	}
+
 	const content =
 		mode === "admin" ? (
 			<AdminView {...view} />
 		) : mode === "speaker" ? (
 			<SpeakerView {...view} />
-		) : mode === "screen" ? (
-			<ScreenView {...view} />
 		) : (
 			<AudienceView {...view} />
 		);
 	return (
 		<WorkspaceShell
-			section={mode === "audience" ? "live" : mode === "screen" ? "live" : mode}
+			section={mode === "audience" ? "live" : mode}
 			eventId={data?.event?.id ?? 1}
 			name={data?.event?.name}
-			bare={mode === "screen"}
 		>
 			<div className={`lt-app ${mode}`}>{content}</div>
 		</WorkspaceShell>
@@ -558,113 +566,32 @@ function SpeakerView({ data, connected, now, current }: ViewProps) {
 	);
 }
 
-function ScreenView({
-	data,
-	connected,
-	now,
-	current,
-	next,
-	position,
-}: ViewProps) {
-	const [joinUrl, setJoinUrl] = useState("");
-	useEffect(() => setJoinUrl(`${location.host}/live`), []);
-	// Shows the selected talk's speaker's share, newest first.
+function ScreenView({ data, connected, current }: ViewProps) {
 	const shares = data?.shares.filter(
 		(share) => share.participantId === current?.speakerId,
 	);
 	const onStage = shares?.find((share) => share.live) ?? shares?.[0];
 	const stream = useShareViewer(onStage);
-	const offline =
-		current &&
-		(current.status === "running" || current.status === "paused") &&
-		onStage &&
-		!onStage.live;
-	if (offline)
-		return (
-			<main className="projection-root">
-				<Connection connected={connected} hasData={Boolean(data)} />
-				<div className="projection-top">
-					<strong>{data?.event?.name}</strong>
-				</div>
-				<section className="projection-offline">
-					<Icon icon={ScreenShare} size={65} />
-					<h1>画面共有が切断されました</h1>
-					<p>接続を確認しています。しばらくお待ちください。</p>
-					<div className="row">
-						<Status talk={current} now={now} />
-						<span className="timer">{timer(current, now).text}</span>
-					</div>
-					<p className="offline-note">
-						タイマーの一時停止・再開は運営が判断します。
-					</p>
-				</section>
-				<footer className="projection-footer">
-					<span>
-						{current.speaker} · {current.title}
-					</span>
-					<span className="projection-url">{joinUrl}</span>
-				</footer>
-			</main>
-		);
-	// While a speaker shares, their screen fills the projector; the timer stays
-	// in a corner.
-	if (stream)
-		return (
-			<main className="projection-root sharing">
-				<ShareVideo stream={stream} label="発表者の画面" />
-				{current && (
-					<aside className="projection-overlay" aria-label="現在の発表">
-						<Status talk={current} now={now} />
-						<Timer talk={current} now={now} />
-					</aside>
-				)}
-			</main>
-		);
 	return (
-		<main className="projection-root">
-			<Connection connected={connected} hasData={Boolean(data)} />
-			<div className="projection-top">
-				<strong>{data?.event?.name}</strong>
-			</div>
-			<section className="projection-main" aria-label="現在の発表">
-				{current ? (
-					<>
-						<div className="projection-slide">
-							<div className="eyebrow">LIGHTNING TALK · {position}</div>
-							<h1>{current.title}</h1>
-							<p>{current.speaker}</p>
-						</div>
-						<aside className="projection-side">
-							<Status talk={current} now={now} />
-							<Timer talk={current} now={now} />
-							<p className="projection-hint">
-								会場の反応は
-								<br />
-								スマートフォンから。
-							</p>
-						</aside>
-					</>
-				) : (
-					<div className="projection-slide waiting">
-						<h1>まもなく開始します</h1>
-					</div>
-				)}
-			</section>
-			<footer className="projection-footer">
-				<div>
-					{next && (
-						<>
-							<small>次の発表</small>
-							<strong>{next.speaker}</strong>　{next.title}
-						</>
-					)}
-				</div>
-				<div>
-					<small>参加用ページ</small>
-					<span className="projection-url">{joinUrl}</span>
-				</div>
-			</footer>
-		</main>
+		<section className="screen-stage" aria-label="発表者の共有画面">
+			{stream ? (
+				<ShareVideo stream={stream} label="発表者の画面" />
+			) : (
+				<output className="screen-placeholder">
+					<Icon icon={ScreenShare} size={40} />
+					<strong>
+						{!connected
+							? "画面共有に接続しています…"
+							: onStage && !onStage.live
+								? "画面共有が切断されました"
+								: onStage
+									? "共有画面に接続しています…"
+									: "発表者の画面共有を待っています"}
+					</strong>
+					<p>共有が始まると、ここに発表画面が映ります。</p>
+				</output>
+			)}
+		</section>
 	);
 }
 
@@ -715,7 +642,7 @@ function AdminView({
 						発表者画面
 					</a>
 					<a href="/screen" target="_blank" rel="noreferrer">
-						会場スクリーン
+						画面共有・リアクション
 					</a>
 				</nav>
 			</div>
@@ -1025,7 +952,7 @@ function ShareSource({
 						</span>
 					)}
 					<p className="step-help">
-						発表を選ぶと、その発表者の共有が会場スクリーンに自動で映ります。
+						発表を選ぶと、その発表者の共有が視聴ページに自動で映ります。
 					</p>
 				</>
 			) : (
