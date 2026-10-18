@@ -6,7 +6,9 @@ import {
 	type LiveSnapshot,
 	liveSnapshotSchema,
 } from "../lib/lt";
+import { OrganizerAccess } from "./organizer-access";
 import { SpeakerAvatar } from "./speaker-avatar";
+
 import { WorkspaceShell } from "./workspace";
 
 type Mode = "audience" | "admin" | "screen" | "speaker";
@@ -467,25 +469,7 @@ function AdminView({
 		);
 	}, [run]);
 
-	if (authorized !== true)
-		return (
-			<div className="app">
-				<SiteHeader page="LT進行" />
-				<div className="page gate">
-					{authorized === null ? (
-						<p className="muted">確認中…</p>
-					) : (
-						<>
-							<h1>運営用リンクから開いてください</h1>
-							<p className="muted">
-								このページは運営者専用です。運営チームで共有している運営用リンクを開くと、そのまま操作できます。
-							</p>
-							<a href="/live">参加者向けの画面へ</a>
-						</>
-					)}
-				</div>
-			</div>
-		);
+	if (authorized !== true) return <OrganizerAccess authorized={authorized} />;
 
 	const active = data?.talks.find(
 		(talk) => talk.status === "running" || talk.status === "paused",
@@ -503,14 +487,8 @@ function AdminView({
 
 	return (
 		<div className="app operator">
-			<SiteHeader name={data?.event?.name} page="LT進行">
+			<div className="wc-admin-actions">
 				<nav className="header-links" aria-label="表示画面を開く">
-					<a href={`/admin/guide?eventId=${data?.event?.id ?? 1}`}>
-						会場案内の設定
-					</a>
-					<a href={`/admin/comments?eventId=${data?.event?.id ?? 1}`}>
-						コメント管理
-					</a>
 					<a href="/live" target="_blank" rel="noreferrer">
 						参加者画面
 					</a>
@@ -521,7 +499,7 @@ function AdminView({
 						会場スクリーン
 					</a>
 				</nav>
-			</SiteHeader>
+			</div>
 			<Connection connected={connected} hasData={Boolean(data)} />
 			{error && (
 				<p className="notice error" role="alert">

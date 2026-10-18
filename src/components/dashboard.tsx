@@ -6,6 +6,7 @@ import {
 	MapPin,
 	Users,
 } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useRef, useState } from "react";
 import {
 	elapsedSeconds,
@@ -24,8 +25,10 @@ export function Dashboard() {
 	const [notice, setNotice] = useState<Guide | null>(null);
 	const [error, setError] = useState("");
 	const [tick, setTick] = useState(0);
+	const [origin, setOrigin] = useState("");
 	const clock = useRef({ server: 0, received: 0 });
 	useEffect(() => {
+		setOrigin(window.location.origin);
 		const timer = setInterval(() => setTick(performance.now()), 1000);
 		return () => clearInterval(timer);
 	}, []);
@@ -43,21 +46,20 @@ export function Dashboard() {
 				let participation: Participation | null = null;
 				let guide: Guide | null = null;
 				if (snapshot.event) {
-					const [member, venue] = await Promise.all([
-						participationApi<Participation>(
-							String(snapshot.event.id),
-							"session",
-						),
-						participationApi<{ guides: Guide[] }>(
+					participation = await participationApi<Participation>(
+						String(snapshot.event.id),
+						"session",
+					);
+					if (participation.participant) {
+						const venue = await participationApi<{ guides: Guide[] }>(
 							String(snapshot.event.id),
 							"guide",
-						),
-					]);
-					participation = member;
-					guide =
-						venue.guides.find((item) =>
-							/^(notice|announcement|important)$/.test(item.category),
-						) ?? null;
+						);
+						guide =
+							venue.guides.find((item) =>
+								/^(notice|announcement|important)$/.test(item.category),
+							) ?? null;
+					}
 				}
 				if (active) {
 					setLive(snapshot);
@@ -84,7 +86,8 @@ export function Dashboard() {
 			clearTimeout(timer);
 		};
 	}, []);
-	const eventPath = `/events/${live?.event?.id ?? 1}`;
+	const participant = session?.participant;
+	const eventPath = live?.event ? `/events/${live.event.id}` : null;
 	const current = live?.talks.find((talk) => talk.id === live.selectedTalkId);
 	const currentIndex =
 		live?.talks.findIndex((talk) => talk.id === current?.id) ?? -1;
@@ -98,11 +101,69 @@ export function Dashboard() {
 				ended: "終了",
 			}[current.status]
 		: "開始待ち";
+	if (!participant || !eventPath) {
+		return (
+			<WorkspaceShell registrationOnly>
+				{error && (
+					<p role="alert" className="wc-notice wc-error">
+						{error}
+					</p>
+				)}
+				<section className="wc-registration-prompt" aria-busy={!live && !error}>
+					<h1>
+						{live?.event?.name ??
+							(error
+								? "イベントを確認できませんでした"
+								: live
+									? "イベントの準備中です"
+									: "イベントを確認しています…")}
+					</h1>
+					{eventPath && (
+						<div className="wc-registration-body">
+							<div className="wc-registration-guide">
+								<h2>まずは、スマホで参加登録</h2>
+								<p>
+									スマホのカメラでQRコードを読み取り、会場で呼ばれたい名前を登録しましょう。
+								</p>
+								<p>
+									登録が終わったら、お使いのPC／Macを接続します。スマホとPCで、同じ参加者としてイベントを楽しめます。
+								</p>
+								<div className="wc-registration-actions">
+									<p>スマホで開いている方は、こちらから。</p>
+									<a className="wc-button wc-primary wc-full" href={eventPath}>
+										参加登録へ進む
+										<ArrowRight size={21} aria-hidden="true" />
+									</a>
+								</div>
+							</div>
+							{origin && (
+								<figure className="wc-registration-qr">
+									<QRCodeSVG
+										value={`${origin}${eventPath}`}
+										size={224}
+										marginSize={4}
+										level="M"
+										role="img"
+										title="スマホで参加登録ページを開くQRコード"
+									/>
+									<figcaption>スマホのカメラで読み取る</figcaption>
+									<a href={eventPath}>
+										{origin}
+										{eventPath}
+									</a>
+								</figure>
+							)}
+						</div>
+					)}
+				</section>
+			</WorkspaceShell>
+		);
+	}
 	return (
 		<WorkspaceShell
 			name={live?.event?.name}
 			eventId={live?.event?.id}
-			identity={session?.participant?.nickname}
+			identity={participant.nickname}
 		>
 			{error && (
 				<p role="alert" className="wc-notice wc-error">
@@ -205,23 +266,16 @@ export function Dashboard() {
 			)}
 			<section className="wc-participation-banner">
 				<div>
-					<span className="wc-badge blue">
-						{session?.participant ? "参加登録済み" : "はじめての方へ"}
-					</span>
-					<h2>
-						{session?.participant
-							? `${session.participant.nickname}さんの参加パス`
-							: "あなたの名前で、参加しよう。"}
-					</h2>
+					<span className="wc-badge blue">参加登録済み</span>
+					<h2>{participant.nickname}さんの参加パス</h2>
 					<p>
-						{session?.participant
-							? `${session.devices.length}台の端末で参加しています。プロフィールや接続端末を確認できます。`
-							: "表示名を登録して、自分のスマホとPC／Macをつなげましょう。"}
+						{session.devices.length}
+						台の端末で参加しています。プロフィールや接続端末を確認できます。
 					</p>
 				</div>
 				<div className="wc-banner-actions">
 					<a className="wc-button wc-primary" href={eventPath}>
-						{session?.participant ? "プロフィールを確認" : "参加登録する"}
+						プロフィールを確認
 						<ArrowRight size={18} aria-hidden="true" />
 					</a>
 					<a className="wc-button wc-secondary" href={`${eventPath}/connect`}>

@@ -169,12 +169,81 @@ test("ニックネーム重複は許可し、別人の参加者IDを渡しても
 	const edited = await a.device.call("profile", {
 		nickname: "新しい名前",
 		profile: "更新",
+		xUsername: "owner_only",
 		participantId: b.state.participant.id,
 	});
 	expect(edited.data.participant.id).toBe(a.state.participant.id);
 	expect(edited.data.participant.nickname).toBe("新しい名前");
+	expect(edited.data.participant.xUsername).toBe("owner_only");
+	expect(
+		(await b.device.call("session")).data.participant.xUsername,
+	).toBeNull();
 	expect((await b.device.call("session")).data.participant.nickname).toBe(
 		"同じ名前",
+	);
+});
+
+test("Xのユーザ名は任意で、@と前後の空白を除いて保存・復元する", async () => {
+	const anonymous = await phone();
+	expect(anonymous.state.participant.xUsername).toBeNull();
+	const device = client();
+	const registered = await device.call("register", {
+		nickname: "Xあり",
+		xUsername: "  @Sample_User123  ",
+	});
+	expect(registered.status).toBe(201);
+	expect(registered.data.participant.xUsername).toBe("Sample_User123");
+	expect((await device.call("session")).data.participant.xUsername).toBe(
+		"Sample_User123",
+	);
+	const stored = await database
+		.prepare("SELECT x_username FROM participants WHERE id = ?")
+		.bind(registered.data.participant.id)
+		.first();
+	expect(stored.x_username).toBe("Sample_User123");
+});
+
+test("Xのユーザ名を編集でき、空欄に戻すと保存済みの値を削除する", async () => {
+	const { device } = await phone();
+	for (const xUsername of ["a".repeat(15), "@new_name", "", null, "   "]) {
+		const edited = await device.call("profile", {
+			nickname: "編集",
+			xUsername,
+		});
+		expect(edited.status).toBe(200);
+		expect(edited.data.participant.xUsername).toBe(
+			xUsername?.trim().replace(/^@/, "") || null,
+		);
+		expect((await device.call("session")).data.participant.xUsername).toBe(
+			edited.data.participant.xUsername,
+		);
+	}
+});
+
+test("不正なXのユーザ名は登録・編集とも拒否し、保存済みプロフィールを変更しない", async () => {
+	const { device } = await phone();
+	for (const xUsername of [
+		"@",
+		"@@name",
+		"a".repeat(16),
+		"with space",
+		"dot.name",
+		"名前",
+		"https://x.com/name",
+		123,
+		[],
+		{},
+	]) {
+		expect(
+			(await client().call("register", { nickname: "不正", xUsername })).status,
+		).toBe(400);
+		expect(
+			(await device.call("profile", { nickname: "変更されない", xUsername }))
+				.status,
+		).toBe(400);
+	}
+	expect((await device.call("session")).data.participant.nickname).not.toBe(
+		"変更されない",
 	);
 });
 
@@ -237,9 +306,13 @@ test("スマホで明示的に確定するまでPCは未接続で、確定後は
 	await mobile.device.call("profile", {
 		nickname: "共有した名前",
 		profile: "PCでも確認",
+		xUsername: "paired_user",
 	});
 	expect((await pc.device.call("session")).data.participant.nickname).toBe(
 		"共有した名前",
+	);
+	expect((await pc.device.call("session")).data.participant.xUsername).toBe(
+		"paired_user",
 	);
 	const stored = await database
 		.prepare(

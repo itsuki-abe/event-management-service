@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { decodeWifi, type Guide, guideCategories } from "../lib/venue";
-import { isOrganizerRequest } from "./organizer";
+import { isOrganizer } from "./organizer";
 
 const guideCategorySchema = z.enum([
 	"notice",
@@ -142,7 +142,7 @@ export async function handleGuideManagement(
 	const respond = (data: unknown, status = 200) =>
 		Response.json(data, { status, headers });
 	try {
-		if (!isOrganizerRequest(request, organizerKey))
+		if (!isOrganizer(request, organizerKey))
 			throw new GuideError(401, "運営用リンクから開き直してください。");
 		if (request.method !== "GET" && request.method !== "POST") {
 			headers.set("Allow", "GET, POST");

@@ -1,6 +1,6 @@
 export const organizerCookieName = "lt_organizer";
 
-export function configuredOrganizerKey(value: unknown): string | undefined {
+export function organizerKey(value: unknown): string | undefined {
 	return typeof value === "string" &&
 		value.length > 0 &&
 		value !== "replace-with-a-long-random-key"
@@ -8,8 +8,8 @@ export function configuredOrganizerKey(value: unknown): string | undefined {
 		: undefined;
 }
 
-export function isOrganizerRequest(request: Request, value: unknown): boolean {
-	const key = configuredOrganizerKey(value);
+export function isOrganizer(request: Request, value: unknown): boolean {
+	const key = organizerKey(value);
 	if (!key) return false;
 	const cookie = request.headers
 		.get("cookie")

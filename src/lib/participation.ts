@@ -2,6 +2,7 @@ export type Participant = {
 	id: number;
 	nickname: string;
 	profile: string | null;
+	xUsername: string | null;
 };
 export type Device = { id: number; name: string; current: boolean };
 export type Participation = {

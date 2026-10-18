@@ -497,6 +497,19 @@ try {
 	await expect(
 		admin.getByRole("heading", { name: "会場案内の設定", exact: true }),
 	).toBeVisible();
+	const management = admin.getByRole("navigation", {
+		name: "運営メニュー",
+		exact: true,
+	});
+	await expect(
+		management.getByRole("link", { name: "会場案内の設定", exact: true }),
+	).toHaveAttribute("aria-current", "page");
+	await expect(
+		management.getByRole("link", { name: "LT進行", exact: true }),
+	).not.toHaveAttribute("aria-current", "page");
+	await expect(
+		management.getByRole("link", { name: "コメント管理", exact: true }),
+	).toHaveAttribute("href", `/admin/comments?eventId=${eventId}`);
 	await admin.getByRole("button", { name: /^Wi-Fi/ }).click();
 	await expect(
 		admin.getByLabel("ネットワーク名（SSID）", { exact: true }),
@@ -542,7 +555,19 @@ try {
 	await expect(admin.getByLabel("パスワード", { exact: true })).toHaveValue(
 		wifi.password,
 	);
-	await admin.setViewportSize({ width: 390, height: 844 });
+	for (const width of [360, 390]) {
+		await admin.setViewportSize({ width, height: 844 });
+		await noOverflow(admin);
+		for (const name of ["LT進行", "コメント管理", "会場案内の設定"]) {
+			const link = management.getByRole("link", { name, exact: true });
+			await expect(link).toBeVisible();
+			const bounds = await link.boundingBox();
+			assert.ok(
+				bounds && bounds.x >= 0 && bounds.x + bounds.width <= width,
+				`Management tab ${name} must fit at ${width}px.`,
+			);
+		}
+	}
 	await capture(admin, "organizer-mobile");
 	await writeFile(
 		join(output, "evidence.json"),

@@ -6,11 +6,7 @@ import {
 	liveActionSchema,
 	liveSnapshotSchema,
 } from "../lib/lt";
-import {
-	configuredOrganizerKey,
-	isOrganizerRequest,
-	organizerCookieName,
-} from "./organizer";
+import { isOrganizer, organizerCookieName, organizerKey } from "./organizer";
 
 class LiveError extends Error {
 	constructor(
@@ -335,15 +331,11 @@ export async function getLive() {
 	}
 }
 
-function organizerKey() {
-	return configuredOrganizerKey(
-		"ORGANIZER_KEY" in env ? env.ORGANIZER_KEY : undefined,
-	);
-}
-
 export function login(request: Request) {
 	const url = new URL(request.url);
-	const key = organizerKey();
+	const key = organizerKey(
+		"ORGANIZER_KEY" in env ? env.ORGANIZER_KEY : undefined,
+	);
 	const valid = key !== undefined && url.searchParams.get("key") === key;
 	return new Response(null, {
 		status: 303,
@@ -359,7 +351,10 @@ export function login(request: Request) {
 
 export async function postLive(request: Request) {
 	if (
-		!isOrganizerRequest(request, organizerKey()) ||
+		!isOrganizer(
+			request,
+			"ORGANIZER_KEY" in env ? env.ORGANIZER_KEY : undefined,
+		) ||
 		!request.headers.get("Content-Type")?.startsWith("application/json")
 	) {
 		return Response.json(

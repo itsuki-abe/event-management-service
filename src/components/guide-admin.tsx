@@ -1,4 +1,4 @@
-import { ArrowLeft, Check, Eye, EyeOff, Save } from "lucide-react";
+import { Check, Eye, EyeOff, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ParticipationApiError, participationApi } from "../lib/participation";
 import {
@@ -128,14 +128,14 @@ export function GuideAdminPage({ eventId }: { eventId: string }) {
 	const definition = guideCategories.find((item) => item.category === selected);
 	const wifi = current ? decodeWifi(current.content) : null;
 	return (
-		<WorkspaceShell section="admin" name={data?.event.name} eventId={eventId}>
+		<WorkspaceShell
+			section="guide-admin"
+			name={data?.event.name}
+			eventId={eventId}
+		>
 			<div className="vg-admin-heading">
 				<div className="wc-page-heading">
-					<a className="vg-back" href="/admin">
-						<ArrowLeft size={17} aria-hidden="true" />
-						LT進行に戻る
-					</a>
-					<h1>会場案内の設定</h1>
+					<h2 className="vg-page-title">会場案内の設定</h2>
 					<p>会場で必要な情報を、参加者の手元へ。</p>
 				</div>
 				<a
@@ -214,7 +214,7 @@ export function GuideAdminPage({ eventId }: { eventId: string }) {
 									{definition?.title}の設定
 								</legend>
 								<div className="vg-editor-heading">
-									<h2>{definition?.title}</h2>
+									<h3>{definition?.title}</h3>
 									<span className="wc-badge blue">
 										{guideCategories.findIndex(
 											(item) => item.category === selected,

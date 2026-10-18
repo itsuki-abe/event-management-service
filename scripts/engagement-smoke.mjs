@@ -3,23 +3,29 @@ import { setTimeout as delay } from "node:timers/promises";
 
 // Run against local sample data, never against a production event.
 const baseUrl = process.argv[2] ?? "http://localhost:3000";
-if (!process.env.ENGAGEMENT_ADMIN_TOKEN) {
+if (!process.env.ORGANIZER_KEY) {
 	try {
 		process.loadEnvFile(".dev.vars");
 	} catch {
 		/* May be supplied directly via the environment. */
 	}
 }
-const token = process.env.ENGAGEMENT_ADMIN_TOKEN;
-assert.ok(token, "Set ENGAGEMENT_ADMIN_TOKEN or create .dev.vars first.");
+const token = process.env.ORGANIZER_KEY;
+assert.ok(token, "Set ORGANIZER_KEY or create .dev.vars first.");
+const login = await fetch(
+	new URL(`/api/login?key=${encodeURIComponent(token)}`, baseUrl),
+	{ redirect: "manual" },
+);
+assert.equal(login.headers.get("location"), "/admin");
+const organizerCookie = login.headers.get("set-cookie")?.split(";")[0];
+assert.ok(organizerCookie, "Organizer login must set a session cookie.");
 let cookie = "";
 async function request(method, payload, { admin = false, status = 200 } = {}) {
 	const response = await fetch(new URL("/api/engagement", baseUrl), {
 		method,
 		headers: {
 			"Content-Type": "application/json",
-			Cookie: cookie,
-			...(admin ? { Authorization: `Bearer ${token}` } : {}),
+			Cookie: [cookie, admin ? organizerCookie : ""].filter(Boolean).join("; "),
 		},
 		body: JSON.stringify({ eventId: 1, ...payload }),
 	});
@@ -35,7 +41,7 @@ async function read(talkId = 1, admin = false) {
 			`/api/engagement?eventId=1&talkId=${talkId}${admin ? "&admin=1" : ""}`,
 			baseUrl,
 		),
-		{ headers: admin ? { Authorization: `Bearer ${token}` } : {} },
+		{ headers: admin ? { Cookie: organizerCookie } : {} },
 	);
 	assert.equal(response.status, 200);
 	return response.json();
@@ -186,10 +192,11 @@ try {
 	created.push(resumed.id);
 	assert.ok((await read(2)).comments.some((c) => c.id === resumed.id));
 	const crossOrigin = await fetch(new URL("/api/engagement", baseUrl), {
-		method: "POST",
+		method: "PATCH",
 		headers: {
 			"Content-Type": "application/json",
 			Origin: "https://other.example",
+			Cookie: organizerCookie,
 		},
 		body: JSON.stringify({
 			eventId: 1,

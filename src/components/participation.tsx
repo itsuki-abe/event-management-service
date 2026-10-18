@@ -39,6 +39,7 @@ export function EventShell({
 			eventId={eventId}
 			name={name}
 			identity={identity}
+			registrationOnly={section === "registration" && !identity}
 		>
 			<div className={`participation ${identity ? "is-registered" : ""}`}>
 				<div className="event-content">
@@ -64,7 +65,11 @@ function ProfileForm({
 }: {
 	participant?: Participant | null;
 	busy: boolean;
-	onSave: (body: { nickname: string; profile: string }) => void;
+	onSave: (body: {
+		nickname: string;
+		profile: string;
+		xUsername: string;
+	}) => void;
 }) {
 	function submit(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
@@ -72,13 +77,14 @@ function ProfileForm({
 		onSave({
 			nickname: String(form.get("nickname") ?? ""),
 			profile: String(form.get("profile") ?? ""),
+			xUsername: String(form.get("xUsername") ?? ""),
 		});
 	}
 	return (
 		<form
 			onSubmit={submit}
 			className="stack"
-			key={`${participant?.id}-${participant?.nickname}-${participant?.profile}`}
+			key={`${participant?.id}-${participant?.nickname}-${participant?.profile}-${participant?.xUsername}`}
 		>
 			<label>
 				表示名 <span className="required">必須</span>
@@ -90,6 +96,25 @@ function ProfileForm({
 					defaultValue={participant?.nickname ?? ""}
 					placeholder="会場で呼ばれたい名前"
 				/>
+			</label>
+			<label>
+				Xのユーザ名 <span className="optional">任意</span>
+				<input
+					name="xUsername"
+					autoComplete="off"
+					autoCapitalize="none"
+					autoCorrect="off"
+					spellCheck={false}
+					maxLength={16}
+					pattern="@?[A-Za-z0-9_]{1,15}"
+					title="半角英数字・_で15文字以内。先頭の@は省略できます。"
+					defaultValue={participant?.xUsername ?? ""}
+					placeholder="@your_name"
+					aria-describedby="x-username-note"
+				/>
+				<span className="field-note" id="x-username-note">
+					@は付けても付けなくてもOK。入力しなくても参加できます。
+				</span>
 			</label>
 			<label>
 				自己紹介 <span className="optional">任意</span>
@@ -294,7 +319,11 @@ export function ParticipationPage({
 		}
 	}
 
-	function saveProfile(body: { nickname: string; profile: string }) {
+	function saveProfile(body: {
+		nickname: string;
+		profile: string;
+		xUsername: string;
+	}) {
 		void run(async () => {
 			setData(
 				await participationApi<Participation>(
@@ -474,7 +503,7 @@ export function ParticipationPage({
 					<p className="lead">
 						{desktop
 							? "このPCも、同じ参加者として利用できます。"
-							: "参加登録が完了しました。続けてPC／Macを接続できます。"}
+							: "参加登録が完了しました。次は、お使いのPC／Macを接続しましょう。"}
 					</p>
 					{preview ? (
 						<section
@@ -584,6 +613,17 @@ export function ParticipationPage({
 						) : (
 							<>
 								<p className="profile-name">{data.participant.nickname}</p>
+								{data.participant.xUsername && (
+									<p className="profile-x">
+										<a
+											href={`https://x.com/${data.participant.xUsername}`}
+											target="_blank"
+											rel="noopener noreferrer"
+										>
+											@{data.participant.xUsername}
+										</a>
+									</p>
+								)}
 								<p className="profile-body">
 									{data.participant.profile ||
 										"自己紹介はまだ登録されていません。"}

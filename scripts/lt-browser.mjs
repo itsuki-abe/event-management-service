@@ -1,21 +1,42 @@
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import { once } from "node:events";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { parseEnv } from "node:util";
 import { expect as baseExpect, chromium } from "@playwright/test";
+import { QRCodeSVG } from "qrcode.react";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 
 const expect = baseExpect.configure({ timeout: 15_000 });
 const root = resolve(import.meta.dirname, "..");
-const secrets = parseEnv(
-	await readFile(join(root, "dist/server/.dev.vars"), "utf8"),
-);
-const organizerKey = secrets.ORGANIZER_KEY;
-assert.ok(organizerKey, "The built local app must have an ORGANIZER_KEY.");
+let organizerKey = randomBytes(24).toString("hex");
+try {
+	const secrets = parseEnv(
+		await readFile(join(root, "dist/server/.dev.vars"), "utf8"),
+	);
+	if (
+		secrets.ORGANIZER_KEY &&
+		secrets.ORGANIZER_KEY !== "replace-with-a-long-random-key"
+	)
+		organizerKey = secrets.ORGANIZER_KEY;
+} catch (error) {
+	if (error.code !== "ENOENT") throw error;
+}
+let browserExecutable = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
+if (!browserExecutable && process.platform === "win32") {
+	const edgePath =
+		"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
+	try {
+		await access(edgePath);
+		browserExecutable = edgePath;
+	} catch {}
+}
 const persistence = await mkdtemp(join(tmpdir(), "lt-browser-"));
 const errors = [];
 let server;
@@ -36,7 +57,7 @@ async function freePort() {
 async function addTalk(page, title, speaker, duration) {
 	const form = page.locator(".add");
 	if (!(await form.evaluate((details) => details.open)))
-		await page.getByText("発表を追加", { exact: true }).click();
+		await form.locator("summary").click();
 	await form.getByLabel("タイトル", { exact: true }).fill(title);
 	await form.getByLabel("発表者", { exact: true }).fill(speaker);
 	await form.getByLabel("持ち時間", { exact: true }).fill(duration);
@@ -85,10 +106,13 @@ try {
 			String(port),
 			"--persist-to",
 			persistence,
+			"--var",
+			`ORGANIZER_KEY:${organizerKey}`,
 		],
 		{
 			cwd: root,
-			detached: true,
+			detached: process.platform !== "win32",
+			windowsHide: true,
 			stdio: ["ignore", "pipe", "pipe"],
 			env: { ...process.env, CI: "true" },
 		},
@@ -125,9 +149,7 @@ try {
 	);
 	browser = await chromium.launch({
 		headless: true,
-		...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
-			? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH }
-			: {}),
+		...(browserExecutable ? { executablePath: browserExecutable } : {}),
 	});
 	const adminContext = await browser.newContext({ baseURL });
 	const viewerContext = await browser.newContext({ baseURL });
@@ -146,6 +168,24 @@ try {
 	const gate = admin.getByRole("heading", {
 		name: "運営用リンクから開いてください",
 	});
+	await admin.goto("/");
+	const menu = admin.getByRole("navigation", {
+		name: "メインメニュー",
+		exact: true,
+	});
+	await expect(menu).toHaveCount(0);
+	await admin.goto("/engagement");
+	await expect(
+		menu.getByRole("link", { name: "LTライブ", exact: true }),
+	).toBeVisible();
+	await menu.getByRole("link", { name: "コメント管理", exact: true }).click();
+	await expect(gate).toBeVisible();
+	assert.equal(
+		(
+			await viewerContext.request.get("/api/engagement?eventId=1&admin=1")
+		).status(),
+		403,
+	);
 	await admin.goto("/admin");
 	await expect(gate).toBeVisible();
 	await admin.goto("/api/login?key=incorrect-organizer-key");
@@ -158,6 +198,58 @@ try {
 	await admin.getByRole("button", { name: "作成", exact: true }).click();
 	await addTalk(admin, "自動化の第一歩", "発表者A", "5");
 	await addTalk(admin, "1秒の発表", "発表者B", "0:01");
+	await admin
+		.getByRole("navigation", { name: "運営メニュー" })
+		.getByRole("link", { name: "コメント管理" })
+		.click();
+	await expect(
+		admin.getByRole("heading", { name: "運営管理", exact: true }),
+	).toBeVisible();
+	const acceptance = admin.getByRole("switch", {
+		name: "コメント受付",
+	});
+	await expect(acceptance).toBeVisible();
+	await acceptance.click();
+	await expect(acceptance).not.toBeChecked();
+	await admin.reload();
+	await expect(acceptance).not.toBeChecked();
+	await acceptance.click();
+	await expect(acceptance).toBeChecked();
+	for (const width of [390, 900, 1440]) {
+		await admin.setViewportSize({ width, height: 900 });
+		await expect(
+			menu.getByRole("link", { name: "LTライブ", exact: true }),
+		).toBeVisible();
+		await expect(
+			menu.getByRole("link", { name: "コメント管理", exact: true }),
+		).toBeVisible();
+		const managementTab = await menu
+			.getByRole("link", { name: "コメント管理", exact: true })
+			.boundingBox();
+		assert.ok(
+			managementTab &&
+				managementTab.x >= 0 &&
+				managementTab.x + managementTab.width <= width,
+			"The comment management tab must be visible without scrolling.",
+		);
+		assert.ok(
+			await admin.evaluate(
+				() => document.documentElement.scrollWidth <= innerWidth,
+			),
+			`Comments overflow at ${width}px`,
+		);
+		await mkdir(join(root, "output/playwright"), { recursive: true });
+		await admin.screenshot({
+			path: join(root, `output/playwright/comments-${width}.png`),
+			fullPage: true,
+		});
+	}
+	await admin.setViewportSize({ width: 1280, height: 900 });
+	await admin
+		.getByRole("navigation", { name: "運営メニュー" })
+		.getByRole("link", { name: "LT進行" })
+		.click();
+	await expect(admin.getByLabel("イベント名", { exact: true })).toHaveCount(0);
 	await addTalk(admin, "削除する発表", "発表者C", "3:30");
 	await admin
 		.getByRole("button", { name: "「削除する発表」を削除", exact: true })
@@ -227,11 +319,113 @@ try {
 			`Horizontal overflow on ${new URL(page.url()).pathname}.`,
 		);
 	}
+	const participantContext = await browser.newContext({
+		baseURL,
+		viewport: { width: 390, height: 844 },
+	});
+	const participant = await participantContext.newPage();
+	participant.on("pageerror", (error) => errors.push(error.message));
+	await participant.goto("/");
+	await expect(
+		participant.getByRole("heading", {
+			name: "まずは、スマホで参加登録",
+			exact: true,
+		}),
+	).toBeVisible();
+	await expect(
+		participant.getByRole("navigation", {
+			name: "メインメニュー",
+			exact: true,
+		}),
+	).toHaveCount(0);
+	await expect(
+		participant.getByRole("navigation", {
+			name: "参加者メニュー",
+			exact: true,
+		}),
+	).toHaveCount(0);
+	await expect(
+		participant.getByRole("img", {
+			name: "スマホで参加登録ページを開くQRコード",
+			exact: true,
+		}),
+	).toBeVisible();
+	const enrollment = participant.getByRole("link", {
+		name: "参加登録へ進む",
+		exact: true,
+	});
+	const eventPath = await enrollment.getAttribute("href");
+	assert.match(eventPath, /^\/events\/\d+$/);
+	await participant.screenshot({
+		path: join(root, "output/playwright/registration-home-mobile.png"),
+		fullPage: true,
+	});
+	await enrollment.click();
+	await participant.getByLabel(/^表示名/).fill("統合確認の参加者");
+	await participant.getByLabel(/^Xのユーザ名/).fill("@merge_qa");
+	await participant
+		.getByRole("button", { name: "この名前で参加する →", exact: true })
+		.click();
+	await expect(
+		participant.getByRole("link", { name: "@merge_qa", exact: true }),
+	).toHaveAttribute("href", "https://x.com/merge_qa");
+	await participant.reload();
+	await expect(
+		participant.getByRole("link", { name: "@merge_qa", exact: true }),
+	).toBeVisible();
+	await participant.goto("/");
+	await expect(
+		participant.getByRole("heading", { name: "LTを楽しもう", exact: true }),
+	).toBeVisible();
+	await expect(
+		participant.getByRole("navigation", {
+			name: "参加者メニュー",
+			exact: true,
+		}),
+	).toBeVisible();
+	await participant.screenshot({
+		path: join(root, "output/playwright/registered-home-mobile.png"),
+		fullPage: true,
+	});
+	await participant.goto(`${eventPath}/qr`);
+	const qr = participant.locator(".venue-qr svg");
+	await expect(qr.locator("title")).toHaveText("イベント参加用QRコード");
+	await expect(
+		participant.getByRole("link", { name: "参加ページを開く", exact: true }),
+	).toHaveAttribute("href", `${baseURL}${eventPath}`);
+	const expectedQr = renderToStaticMarkup(
+		createElement(QRCodeSVG, {
+			value: `${baseURL}${eventPath}`,
+			size: 280,
+			marginSize: 2,
+			level: "M",
+			title: "イベント参加用QRコード",
+		}),
+	);
+	const expectedPaths = [...expectedQr.matchAll(/\sd="([^"]+)"/g)].map(
+		(match) => match[1],
+	);
+	assert.equal(
+		await qr.locator("path").last().getAttribute("d"),
+		expectedPaths.at(-1),
+		"The rendered QR must encode this event's enrollment URL.",
+	);
+	await participant.screenshot({
+		path: join(root, "output/playwright/venue-qr-mobile.png"),
+		fullPage: true,
+	});
+	assert.ok(
+		await participant.evaluate(
+			() => document.documentElement.scrollWidth <= innerWidth,
+		),
+		"Registration QR must fit the mobile viewport.",
+	);
 	assert.deepEqual(errors, [], "No unhandled browser errors are allowed.");
 	console.info(
-		"Browser QA passed: organizer link, first-run event and talks, delete, four-screen timer sync, pause/resume/reload, next/overtime, reconnect, and mobile layout.",
+		"Browser QA passed: organizer access, comment management, first-run event and talks, four-screen timer sync, reconnect, mobile layouts, registration/X profile, registered home and event enrollment QR.",
 	);
 } catch (error) {
+	console.error(error instanceof Error ? error.message : error);
 	if (browser) {
 		const page = browser
 			.contexts()
@@ -250,15 +444,29 @@ try {
 	await browser?.close();
 	if (server && server.exitCode === null) {
 		const exited = once(server, "exit");
-		try {
-			process.kill(-server.pid, "SIGTERM");
-		} catch {}
+		if (process.platform === "win32")
+			spawnSync("taskkill", ["/PID", String(server.pid), "/T", "/F"], {
+				windowsHide: true,
+				stdio: "ignore",
+			});
+		else {
+			try {
+				process.kill(-server.pid, "SIGTERM");
+			} catch {}
+		}
 		await Promise.race([exited, delay(3000)]);
-		if (server.exitCode === null) {
+		if (server.exitCode === null && process.platform !== "win32") {
 			try {
 				process.kill(-server.pid, "SIGKILL");
 			} catch {}
 		}
 	}
-	await rm(persistence, { recursive: true, force: true });
+	assert.equal(dirname(resolve(persistence)), resolve(tmpdir()));
+	assert.ok(basename(persistence).startsWith("lt-browser-"));
+	await rm(persistence, {
+		recursive: true,
+		force: true,
+		maxRetries: 10,
+		retryDelay: 300,
+	});
 }
