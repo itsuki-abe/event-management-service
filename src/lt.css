@@ -508,11 +508,16 @@
 		overflow: hidden;
 		color: var(--muted);
 	}
+	/* Previews take the shared screen's own aspect ratio, so no bars appear. */
+	.slide-preview:has(.share-video) {
+		aspect-ratio: auto;
+		border: 0;
+		background: none;
+	}
 	.share-video {
 		display: block;
 		width: 100%;
-		height: 100%;
-		object-fit: contain;
+		height: auto;
 	}
 	.presenter-layout {
 		display: grid;
@@ -676,11 +681,12 @@
 		position: relative;
 		height: 100dvh;
 		padding: 0;
-		background: #000;
 	}
 	.projection-root.sharing .share-video {
 		position: absolute;
 		inset: 0;
+		height: 100%;
+		object-fit: contain;
 	}
 	.projection-overlay {
 		position: absolute;
