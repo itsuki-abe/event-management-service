@@ -1,3 +1,5 @@
+import { readPublicGuides } from "./venue";
+
 type Session = {
 	id: number;
 	participant_id: number | null;
@@ -256,13 +258,10 @@ export async function handleParticipation(
 			.first<{ id: number; name: string }>();
 		if (!event) throw new ApiError(404, "イベントが見つかりません。");
 		if (request.method === "GET" && action === "guide") {
-			const guides = await database
-				.prepare(
-					"SELECT id, category, title, content FROM event_guides WHERE event_id = ? AND is_visible = 1 ORDER BY sort_order, id",
-				)
-				.bind(eventId)
-				.all();
-			return respond({ event, guides: guides.results });
+			return respond({
+				event,
+				guides: await readPublicGuides(database, eventId),
+			});
 		}
 		let session = await readSession(database, request, eventId);
 		if (request.method === "GET" && action === "session")

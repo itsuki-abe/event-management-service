@@ -13,6 +13,15 @@ export type Participation = {
 export type Pairing = { code: string; expiresAt: number };
 export type PairingPreview = { deviceName: string; expiresAt: number };
 
+export class ParticipationApiError extends Error {
+	constructor(
+		message: string,
+		readonly status: number,
+	) {
+		super(message);
+	}
+}
+
 export async function participationApi<T>(
 	eventId: string,
 	action: string,
@@ -27,8 +36,9 @@ export async function participationApi<T>(
 	});
 	const data = (await response.json()) as T & { error?: string };
 	if (!response.ok)
-		throw new Error(
+		throw new ParticipationApiError(
 			data.error ?? "通信に失敗しました。もう一度お試しください。",
+			response.status,
 		);
 	return data as T;
 }

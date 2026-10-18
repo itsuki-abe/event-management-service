@@ -16,6 +16,7 @@ import { Route as LiveRouteImport } from './routes/live'
 import { Route as ScreenRouteImport } from './routes/screen'
 import { Route as SpeakerRouteImport } from './routes/speaker'
 import { Route as AdminCommentsRouteImport } from './routes/admin_.comments'
+import { Route as AdminGuideRouteImport } from './routes/admin_.guide'
 import { Route as ApiEngagementRouteImport } from './routes/api.engagement'
 import { Route as ApiEventsRouteImport } from './routes/api.events'
 import { Route as ApiHealthRouteImport } from './routes/api.health'
@@ -61,6 +62,11 @@ const SpeakerRoute = SpeakerRouteImport.update({
 const AdminCommentsRoute = AdminCommentsRouteImport.update({
   id: '/admin_/comments',
   path: '/admin/comments',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminGuideRoute = AdminGuideRouteImport.update({
+  id: '/admin_/guide',
+  path: '/admin/guide',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiEngagementRoute = ApiEngagementRouteImport.update({
@@ -127,6 +133,7 @@ export interface FileRoutesByFullPath {
   '/screen': typeof ScreenRoute
   '/speaker': typeof SpeakerRoute
   '/admin/comments': typeof AdminCommentsRoute
+  '/admin/guide': typeof AdminGuideRoute
   '/api/engagement': typeof ApiEngagementRoute
   '/api/events': typeof ApiEventsRouteWithChildren
   '/api/health': typeof ApiHealthRoute
@@ -147,6 +154,7 @@ export interface FileRoutesByTo {
   '/screen': typeof ScreenRoute
   '/speaker': typeof SpeakerRoute
   '/admin/comments': typeof AdminCommentsRoute
+  '/admin/guide': typeof AdminGuideRoute
   '/api/engagement': typeof ApiEngagementRoute
   '/api/events': typeof ApiEventsRouteWithChildren
   '/api/health': typeof ApiHealthRoute
@@ -168,6 +176,7 @@ export interface FileRoutesById {
   '/screen': typeof ScreenRoute
   '/speaker': typeof SpeakerRoute
   '/admin_/comments': typeof AdminCommentsRoute
+  '/admin_/guide': typeof AdminGuideRoute
   '/api/engagement': typeof ApiEngagementRoute
   '/api/events': typeof ApiEventsRouteWithChildren
   '/api/health': typeof ApiHealthRoute
@@ -190,6 +199,7 @@ export interface FileRouteTypes {
     | '/screen'
     | '/speaker'
     | '/admin/comments'
+    | '/admin/guide'
     | '/api/engagement'
     | '/api/events'
     | '/api/health'
@@ -210,6 +220,7 @@ export interface FileRouteTypes {
     | '/screen'
     | '/speaker'
     | '/admin/comments'
+    | '/admin/guide'
     | '/api/engagement'
     | '/api/events'
     | '/api/health'
@@ -230,6 +241,7 @@ export interface FileRouteTypes {
     | '/screen'
     | '/speaker'
     | '/admin_/comments'
+    | '/admin_/guide'
     | '/api/engagement'
     | '/api/events'
     | '/api/health'
@@ -251,6 +263,7 @@ export interface RootRouteChildren {
   ScreenRoute: typeof ScreenRoute
   SpeakerRoute: typeof SpeakerRoute
   AdminCommentsRoute: typeof AdminCommentsRoute
+  AdminGuideRoute: typeof AdminGuideRoute
   ApiEngagementRoute: typeof ApiEngagementRoute
   ApiEventsRoute: typeof ApiEventsRouteWithChildren
   ApiHealthRoute: typeof ApiHealthRoute
@@ -312,6 +325,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/comments'
       fullPath: '/admin/comments'
       preLoaderRoute: typeof AdminCommentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin_/guide': {
+      id: '/admin_/guide'
+      path: '/admin/guide'
+      fullPath: '/admin/guide'
+      preLoaderRoute: typeof AdminGuideRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/engagement': {
@@ -414,6 +434,7 @@ const rootRouteChildren: RootRouteChildren = {
   ScreenRoute: ScreenRoute,
   SpeakerRoute: SpeakerRoute,
   AdminCommentsRoute: AdminCommentsRoute,
+  AdminGuideRoute: AdminGuideRoute,
   ApiEngagementRoute: ApiEngagementRoute,
   ApiEventsRoute: ApiEventsRouteWithChildren,
   ApiHealthRoute: ApiHealthRoute,

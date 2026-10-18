@@ -120,7 +120,7 @@ test("閲覧では登録を要求せず、存在しないイベントは拒否�
 test("会場案内はイベント内の公開データだけを表示する", async () => {
 	await database
 		.prepare(
-			"INSERT INTO event_guides (event_id, category, title, content, sort_order, is_visible) VALUES (1, 'wifi', '公開Wi-Fi', 'Guest network', 2, 1), (1, 'notice', 'お知らせ', '受付をご利用ください', 1, 1), (1, 'rules', '非公開', 'hidden', 0, 0), (2, 'wifi', '別イベント', 'other', 0, 1)",
+			"INSERT INTO event_guides (event_id, category, title, content, sort_order, is_visible) VALUES (1, 'wifi', '公開Wi-Fi', '{\"ssid\":\"Guest network\",\"password\":\"\"}', 2, 1), (1, 'notice', 'お知らせ', '受付をご利用ください', 1, 1), (1, 'rules', '非公開', 'hidden', 0, 0), (2, 'wifi', '別イベント', 'other', 0, 1)",
 		)
 		.run();
 	const response = await client().call("guide");

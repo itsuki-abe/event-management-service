@@ -6,6 +6,11 @@ import {
 	liveActionSchema,
 	liveSnapshotSchema,
 } from "../lib/lt";
+import {
+	configuredOrganizerKey,
+	isOrganizerRequest,
+	organizerCookieName,
+} from "./organizer";
 
 class LiveError extends Error {
 	constructor(
@@ -330,15 +335,10 @@ export async function getLive() {
 	}
 }
 
-const cookieName = "lt_organizer";
-
 function organizerKey() {
-	const key = "ORGANIZER_KEY" in env ? env.ORGANIZER_KEY : undefined;
-	return typeof key === "string" &&
-		key &&
-		key !== "replace-with-a-long-random-key"
-		? key
-		: undefined;
+	return configuredOrganizerKey(
+		"ORGANIZER_KEY" in env ? env.ORGANIZER_KEY : undefined,
+	);
 }
 
 export function login(request: Request) {
@@ -351,23 +351,15 @@ export function login(request: Request) {
 			Location: valid ? "/admin" : "/admin?invalid",
 			"Cache-Control": "no-store",
 			...(valid && {
-				"Set-Cookie": `${cookieName}=${encodeURIComponent(key)}; Path=/; HttpOnly; SameSite=Strict; Max-Age=2592000${url.protocol === "https:" ? "; Secure" : ""}`,
+				"Set-Cookie": `${organizerCookieName}=${encodeURIComponent(key)}; Path=/; HttpOnly; SameSite=Strict; Max-Age=2592000${url.protocol === "https:" ? "; Secure" : ""}`,
 			}),
 		},
 	});
 }
 
 export async function postLive(request: Request) {
-	const key = organizerKey();
-	const cookie = request.headers
-		.get("Cookie")
-		?.split(/;\s*/)
-		.find((item) => item.startsWith(`${cookieName}=`))
-		?.slice(cookieName.length + 1);
 	if (
-		!key ||
-		!cookie ||
-		cookie !== encodeURIComponent(key) ||
+		!isOrganizerRequest(request, organizerKey()) ||
 		!request.headers.get("Content-Type")?.startsWith("application/json")
 	) {
 		return Response.json(

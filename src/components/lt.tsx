@@ -505,6 +505,9 @@ function AdminView({
 		<div className="app operator">
 			<SiteHeader name={data?.event?.name} page="LT進行">
 				<nav className="header-links" aria-label="表示画面を開く">
+					<a href={`/admin/guide?eventId=${data?.event?.id ?? 1}`}>
+						会場案内の設定
+					</a>
 					<a href={`/admin/comments?eventId=${data?.event?.id ?? 1}`}>
 						コメント管理
 					</a>

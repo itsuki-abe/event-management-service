@@ -433,57 +433,6 @@ textarea {
 	margin-top: 9px;
 	color: var(--muted);
 }
-.wc-guide-layout {
-	display: grid;
-	grid-template-columns: 260px minmax(0, 1fr);
-	gap: 45px;
-}
-.wc-guide-list {
-	border-top: 1px solid var(--line);
-}
-.wc-guide-list button {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	width: 100%;
-	min-height: 66px;
-	padding: 18px 12px;
-	border: 0;
-	border-bottom: 1px solid var(--line);
-	background: none;
-	color: var(--ink);
-	font-weight: 700;
-	text-align: left;
-}
-.wc-guide-list button.active {
-	color: var(--blue);
-	background: var(--tint);
-}
-.wc-guide-detail {
-	background: white;
-	padding: 30px 32px;
-	min-height: 320px;
-}
-.wc-guide-detail h2 {
-	font-size: 23px;
-	margin-bottom: 24px;
-}
-.wc-guide-content {
-	white-space: pre-wrap;
-	overflow-wrap: anywhere;
-}
-.wc-guide-copy {
-	margin-top: 24px;
-}
-.wc-accordion {
-	display: none;
-}
-.wc-copy-feedback {
-	display: block;
-	color: var(--green);
-	margin-top: 15px;
-	font-size: 14px;
-}
 .wc-empty-panel {
 	padding: 32px;
 	background: white;
@@ -654,42 +603,6 @@ textarea {
 	}
 	.wc-footer > div {
 		margin-top: 10px;
-	}
-	.wc-guide-layout {
-		display: block;
-	}
-	.wc-guide-list,
-	.wc-guide-detail {
-		display: none;
-	}
-	.wc-accordion {
-		display: block;
-		border-bottom: 1px solid var(--line);
-	}
-	.wc-accordion summary {
-		list-style: none;
-		cursor: pointer;
-		display: flex;
-		align-items: center;
-		gap: 12px;
-		padding: 21px 0;
-		min-height: 60px;
-		font-weight: 700;
-	}
-	.wc-accordion summary::-webkit-details-marker {
-		display: none;
-	}
-	.wc-accordion summary > svg:first-child {
-		color: var(--blue);
-	}
-	.wc-accordion summary > span {
-		flex: 1;
-	}
-	.wc-accordion[open] summary > svg:last-child {
-		transform: rotate(90deg);
-	}
-	.wc-accordion > div {
-		padding: 0 0 24px;
 	}
 	.wc-empty-panel {
 		padding: 23px 20px;
