@@ -323,6 +323,23 @@ textarea {
 	align-items: center;
 	min-height: 510px;
 }
+.wc-registration-only .wc-page {
+	padding-bottom: 36px;
+}
+.wc-registration-prompt {
+	display: grid;
+	gap: 32px;
+	width: 100%;
+	max-width: 480px;
+	margin: clamp(40px, 12vh, 120px) auto;
+	padding: 32px 24px;
+	background: white;
+	border-top: 5px solid var(--blue);
+}
+.wc-registration-prompt h1 {
+	font-size: clamp(26px, 4vw, 36px);
+	overflow-wrap: anywhere;
+}
 .wc-home-intro h1 {
 	font-size: 44px;
 	line-height: 1.35;
