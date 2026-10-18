@@ -12,8 +12,15 @@
     {
       "idx": 1,
       "version": "6",
-      "when": 1792303016904,
-      "tag": "0001_lying_shatterstar",
+      "when": 1792303211005,
+      "tag": "0001_misty_sphinx",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1792306103329,
+      "tag": "0002_elite_thunderbolt",
       "breakpoints": true
     }
   ]

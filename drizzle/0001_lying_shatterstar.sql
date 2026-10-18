@@ -1,3 +1,0 @@
-ALTER TABLE `talk_comments` ADD `display_name` text DEFAULT '' NOT NULL;--> statement-breakpoint
-UPDATE `talk_comments` SET `display_name` = COALESCE((SELECT `nickname` FROM `participants` WHERE `participants`.`id` = `talk_comments`.`participant_id`), 'ゲスト') WHERE `display_name` = '';--> statement-breakpoint
-CREATE INDEX `reactions_participant_created_idx` ON `reactions` (`participant_id`,`created_at`);

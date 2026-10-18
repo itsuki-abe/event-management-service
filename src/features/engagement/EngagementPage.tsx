@@ -287,14 +287,14 @@ export function EngagementPage({
 					<a
 						className={!admin ? "active" : ""}
 						aria-current={!admin ? "page" : undefined}
-						href={`/?eventId=${eventId}`}
+						href={`/engagement?eventId=${eventId}`}
 					>
 						LTライブ
 					</a>
 					<a
 						className={admin ? "active" : ""}
 						aria-current={admin ? "page" : undefined}
-						href={`/admin?eventId=${eventId}`}
+						href={`/admin/comments?eventId=${eventId}`}
 					>
 						コメント管理
 					</a>
@@ -656,7 +656,7 @@ export function EngagementPage({
 											運営接続を終了
 										</button>
 									) : (
-										<a href={`/admin?eventId=${eventId}`}>
+										<a href={`/admin/comments?eventId=${eventId}`}>
 											運営の方はこちら
 											<Icon name="arrow_forward" />
 										</a>
@@ -669,7 +669,7 @@ export function EngagementPage({
 			</main>
 			<nav className="bottom-nav" aria-label="画面メニュー">
 				<a
-					href={`/?eventId=${eventId}`}
+					href={`/engagement?eventId=${eventId}`}
 					className={!admin ? "active" : ""}
 					aria-current={!admin ? "page" : undefined}
 				>
@@ -677,7 +677,7 @@ export function EngagementPage({
 					<span>ライブ</span>
 				</a>
 				<a
-					href={`/admin?eventId=${eventId}`}
+					href={`/admin/comments?eventId=${eventId}`}
 					className={admin ? "active" : ""}
 					aria-current={admin ? "page" : undefined}
 				>

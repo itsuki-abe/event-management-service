@@ -147,6 +147,7 @@ export const eventLiveState = sqliteTable(
 			.notNull()
 			.references(() => events.id),
 		selectedTalkId: integer("selected_talk_id"),
+		revision: text().notNull().default("0"),
 		projectedSessionId: integer("projected_session_id"),
 		commentsEnabled: integer("comments_enabled", { mode: "boolean" })
 			.notNull()
