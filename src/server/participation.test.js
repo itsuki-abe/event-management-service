@@ -109,6 +109,142 @@ async function computer(eventId = 1) {
 const digest = (value) =>
 	createHash("sha256").update(value.replaceAll("-", "")).digest("hex");
 
+test("Xは任意で、URL・旧Twitter URL・ユーザー名を正規化して保存する", async () => {
+	for (const [input, expected] of [
+		[undefined, null],
+		["", null],
+		["   ", null],
+		[" @workshop_123 ", "workshop_123"],
+		["workshop_123", "workshop_123"],
+		["https://x.com/workshop_123/", "workshop_123"],
+		["https://twitter.com/workshop_123?s=21", "workshop_123"],
+		["www.x.com/workshop_123", "workshop_123"],
+	]) {
+		const device = client();
+		const registered = await device.call("register", {
+			nickname: "X登録テスト",
+			xUsername: input,
+		});
+		expect(registered.status).toBe(201);
+		expect(registered.data.participant.xUsername).toBe(expected);
+		expect((await device.call("session")).data.participant.xUsername).toBe(
+			expected,
+		);
+	}
+});
+
+test("不正なXリンク・投稿URL・不正な型は保存しない", async () => {
+	for (const xUsername of [
+		"javascript:alert(1)",
+		"https://example.com/name",
+		"https://x.com.evil.test/name",
+		"https://x.com/name/status/123",
+		"https://x.com/intent/follow",
+		"https://x.com/home",
+		"https://x.com/name/extra",
+		"https://user@x.com/name",
+		"https://x.com:444/name",
+		"@has space",
+		"a".repeat(16),
+		123,
+		{},
+		[],
+	]) {
+		expect(
+			(await client().call("register", { nickname: "不正URL", xUsername }))
+				.status,
+		).toBe(400);
+	}
+});
+
+test("一覧はイベント内の登録済み参加者に限定し、プロフィール以外の情報を返さない", async () => {
+	const a = client();
+	const registered = await a.call("register", {
+		nickname: "一覧の本人",
+		profile: "交流しましょう",
+		xUsername: "@directory_user",
+	});
+	const b = await phone(1, "一覧の仲間");
+	const other = await phone(2, "別イベントの人");
+	expect((await client().call("participants")).status).toBe(401);
+	const response = await a.call("participants");
+	expect(response.status).toBe(200);
+	expect(response.headers.get("cache-control")).toBe("no-store");
+	expect(response.data.currentParticipantId).toBe(
+		registered.data.participant.id,
+	);
+	expect(response.data.participants).toContainEqual(
+		registered.data.participant,
+	);
+	expect(
+		response.data.participants.some(
+			(person) => person.id === b.state.participant.id,
+		),
+	).toBe(true);
+	expect(
+		response.data.participants.some(
+			(person) => person.id === other.state.participant.id,
+		),
+	).toBe(false);
+	for (const person of response.data.participants)
+		expect(Object.keys(person).sort()).toEqual([
+			"id",
+			"nickname",
+			"profile",
+			"xUsername",
+		]);
+	const foreignCookie = await handleParticipation(
+		database,
+		new Request("https://events.test/api/events/2/participants", {
+			headers: { cookie: a.cookie },
+		}),
+		"2",
+		"participants",
+	);
+	expect(foreignCookie.status).toBe(401);
+	await a.call("devices/revoke", { deviceId: registered.data.currentDeviceId });
+	expect((await a.call("participants")).status).toBe(401);
+});
+
+test("Xの編集・削除は一覧と接続済み端末にも反映し、不正な編集は元の値を保つ", async () => {
+	const mobile = await phone();
+	const pc = await computer();
+	await mobile.device.call("pairing/confirm", { code: pc.code });
+	const saved = await mobile.device.call("profile", {
+		nickname: "Xを更新",
+		xUsername: "@new_profile",
+	});
+	expect(saved.data.participant.xUsername).toBe("new_profile");
+	expect((await pc.device.call("session")).data.participant.xUsername).toBe(
+		"new_profile",
+	);
+	expect(
+		(await mobile.device.call("participants")).data.participants.find(
+			(person) => person.id === mobile.state.participant.id,
+		).xUsername,
+	).toBe("new_profile");
+	expect(
+		(
+			await mobile.device.call("profile", {
+				nickname: "Xを更新",
+				xUsername: "javascript:alert(1)",
+			})
+		).status,
+	).toBe(400);
+	expect((await mobile.device.call("session")).data.participant.xUsername).toBe(
+		"new_profile",
+	);
+	await mobile.device.call("profile", { nickname: "Xを更新", xUsername: "" });
+	expect(
+		(await pc.device.call("session")).data.participant.xUsername,
+	).toBeNull();
+	expect(
+		(await mobile.device.call("participants")).data.participants.find(
+			(person) => person.id === mobile.state.participant.id,
+		).xUsername,
+	).toBeNull();
+});
+
 test("閲覧では登録を要求せず、存在しないイベントは拒否する", async () => {
 	const response = await client().call("session");
 	expect(response.status).toBe(200);
@@ -120,7 +256,7 @@ test("閲覧では登録を要求せず、存在しないイベントは拒否�
 test("会場案内はイベント内の公開データだけを表示する", async () => {
 	await database
 		.prepare(
-			"INSERT INTO event_guides (event_id, category, title, content, sort_order, is_visible) VALUES (1, 'wifi', '公開Wi-Fi', 'Guest network', 2, 1), (1, 'notice', 'お知らせ', '受付をご利用ください', 1, 1), (1, 'rules', '非公開', 'hidden', 0, 0), (2, 'wifi', '別イベント', 'other', 0, 1)",
+			"INSERT INTO event_guides (event_id, category, title, content, sort_order, is_visible) VALUES (1, 'wifi', '公開Wi-Fi', '{\"ssid\":\"Guest network\",\"password\":\"\"}', 2, 1), (1, 'notice', 'お知らせ', '受付をご利用ください', 1, 1), (1, 'rules', '非公開', 'hidden', 0, 0), (2, 'wifi', '別イベント', 'other', 0, 1)",
 		)
 		.run();
 	const response = await client().call("guide");
@@ -229,7 +365,7 @@ test("不正なXのユーザ名は登録・編集とも拒否し、保存済み�
 		"with space",
 		"dot.name",
 		"名前",
-		"https://x.com/name",
+		"https://x.com/name/status/1",
 		123,
 		[],
 		{},

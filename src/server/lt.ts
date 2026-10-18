@@ -6,11 +6,7 @@ import {
 	liveActionSchema,
 	liveSnapshotSchema,
 } from "../lib/lt";
-import {
-	organizerCookieName as cookieName,
-	isOrganizer,
-	organizerKey,
-} from "./organizer";
+import { isOrganizer, organizerCookieName, organizerKey } from "./organizer";
 
 class LiveError extends Error {
 	constructor(
@@ -324,9 +320,15 @@ async function applyAction(action: LiveAction) {
 
 export async function getLive(request: Request) {
 	try {
-		return Response.json(await readSnapshot(isOrganizer(request)), {
-			headers: noStore,
-		});
+		return Response.json(
+			await readSnapshot(
+				isOrganizer(
+					request,
+					"ORGANIZER_KEY" in env ? env.ORGANIZER_KEY : undefined,
+				),
+			),
+			{ headers: noStore },
+		);
 	} catch (error) {
 		console.error("LT snapshot failed", error);
 		return Response.json(
@@ -338,7 +340,9 @@ export async function getLive(request: Request) {
 
 export function login(request: Request) {
 	const url = new URL(request.url);
-	const key = organizerKey();
+	const key = organizerKey(
+		"ORGANIZER_KEY" in env ? env.ORGANIZER_KEY : undefined,
+	);
 	const valid = key !== undefined && url.searchParams.get("key") === key;
 	return new Response(null, {
 		status: 303,
@@ -346,7 +350,7 @@ export function login(request: Request) {
 			Location: valid ? "/admin" : "/admin?invalid",
 			"Cache-Control": "no-store",
 			...(valid && {
-				"Set-Cookie": `${cookieName}=${encodeURIComponent(key)}; Path=/; HttpOnly; SameSite=Strict; Max-Age=2592000${url.protocol === "https:" ? "; Secure" : ""}`,
+				"Set-Cookie": `${organizerCookieName}=${encodeURIComponent(key)}; Path=/; HttpOnly; SameSite=Strict; Max-Age=2592000${url.protocol === "https:" ? "; Secure" : ""}`,
 			}),
 		},
 	});
@@ -354,7 +358,10 @@ export function login(request: Request) {
 
 export async function postLive(request: Request) {
 	if (
-		!isOrganizer(request) ||
+		!isOrganizer(
+			request,
+			"ORGANIZER_KEY" in env ? env.ORGANIZER_KEY : undefined,
+		) ||
 		!request.headers.get("Content-Type")?.startsWith("application/json")
 	) {
 		return Response.json(

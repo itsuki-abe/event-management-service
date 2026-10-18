@@ -92,7 +92,13 @@ export async function postShare(request: Request) {
 			WHERE l.event_id = ? AND d.id = ?`)
 			.bind(event.id, action.sessionId)
 			.first();
-		if (!onStage && !isOrganizer(request))
+		if (
+			!onStage &&
+			!isOrganizer(
+				request,
+				"ORGANIZER_KEY" in env ? env.ORGANIZER_KEY : undefined,
+			)
+		)
 			return fail("運営用リンクから開き直してください。", 401);
 		const id = crypto.randomUUID();
 		const [, inserted] = await env.DB.batch([

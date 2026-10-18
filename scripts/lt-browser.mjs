@@ -1,21 +1,42 @@
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import { once } from "node:events";
-import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { parseEnv } from "node:util";
 import { expect as baseExpect, chromium } from "@playwright/test";
+import { QRCodeSVG } from "qrcode.react";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 
 const expect = baseExpect.configure({ timeout: 15_000 });
 const root = resolve(import.meta.dirname, "..");
-const secrets = parseEnv(
-	await readFile(join(root, "dist/server/.dev.vars"), "utf8"),
-);
-const organizerKey = secrets.ORGANIZER_KEY;
-assert.ok(organizerKey, "The built local app must have an ORGANIZER_KEY.");
+let organizerKey = randomBytes(24).toString("hex");
+try {
+	const secrets = parseEnv(
+		await readFile(join(root, "dist/server/.dev.vars"), "utf8"),
+	);
+	if (
+		secrets.ORGANIZER_KEY &&
+		secrets.ORGANIZER_KEY !== "replace-with-a-long-random-key"
+	)
+		organizerKey = secrets.ORGANIZER_KEY;
+} catch (error) {
+	if (error.code !== "ENOENT") throw error;
+}
+let browserExecutable = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
+if (!browserExecutable && process.platform === "win32") {
+	const edgePath =
+		"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
+	try {
+		await access(edgePath);
+		browserExecutable = edgePath;
+	} catch {}
+}
 const persistence = await mkdtemp(join(tmpdir(), "lt-browser-"));
 const errors = [];
 let server;
@@ -87,10 +108,13 @@ try {
 			String(port),
 			"--persist-to",
 			persistence,
+			"--var",
+			`ORGANIZER_KEY:${organizerKey}`,
 		],
 		{
 			cwd: root,
-			detached: true,
+			detached: process.platform !== "win32",
+			windowsHide: true,
 			stdio: ["ignore", "pipe", "pipe"],
 			env: { ...process.env, CI: "true" },
 		},
@@ -127,9 +151,7 @@ try {
 	);
 	browser = await chromium.launch({
 		headless: true,
-		...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
-			? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH }
-			: {}),
+		...(browserExecutable ? { executablePath: browserExecutable } : {}),
 	});
 	const adminContext = await browser.newContext({ baseURL });
 	const viewerContext = await browser.newContext({ baseURL });
@@ -153,6 +175,8 @@ try {
 		name: "メインメニュー",
 		exact: true,
 	});
+	await expect(menu).toHaveCount(0);
+	await admin.goto("/engagement");
 	await expect(
 		menu.getByRole("link", { name: "LTライブ", exact: true }),
 	).toBeVisible();
@@ -314,11 +338,113 @@ try {
 			`Horizontal overflow on ${new URL(page.url()).pathname}.`,
 		);
 	}
+	const participantContext = await browser.newContext({
+		baseURL,
+		viewport: { width: 390, height: 844 },
+	});
+	const participant = await participantContext.newPage();
+	participant.on("pageerror", (error) => errors.push(error.message));
+	await participant.goto("/");
+	await expect(
+		participant.getByRole("heading", {
+			name: "まずは、スマホで参加登録",
+			exact: true,
+		}),
+	).toBeVisible();
+	await expect(
+		participant.getByRole("navigation", {
+			name: "メインメニュー",
+			exact: true,
+		}),
+	).toHaveCount(0);
+	await expect(
+		participant.getByRole("navigation", {
+			name: "参加者メニュー",
+			exact: true,
+		}),
+	).toHaveCount(0);
+	await expect(
+		participant.getByRole("img", {
+			name: "スマホで参加登録ページを開くQRコード",
+			exact: true,
+		}),
+	).toBeVisible();
+	const enrollment = participant.getByRole("link", {
+		name: "参加登録へ進む",
+		exact: true,
+	});
+	const eventPath = await enrollment.getAttribute("href");
+	assert.match(eventPath, /^\/events\/\d+$/);
+	await participant.screenshot({
+		path: join(root, "output/playwright/registration-home-mobile.png"),
+		fullPage: true,
+	});
+	await enrollment.click();
+	await participant.getByLabel(/^表示名/).fill("統合確認の参加者");
+	await participant.getByLabel(/^Xのプロフィール/).fill("@merge_qa");
+	await participant
+		.getByRole("button", { name: "この名前で参加する →", exact: true })
+		.click();
+	const profileLink = participant.getByRole("link", {
+		name: "統合確認の参加者さんのXプロフィール（新しいタブで開く）",
+		exact: true,
+	});
+	await expect(profileLink).toHaveAttribute("href", "https://x.com/merge_qa");
+	await participant.reload();
+	await expect(profileLink).toBeVisible();
+	await participant.goto("/");
+	await expect(
+		participant.getByRole("heading", { name: "LTを楽しもう", exact: true }),
+	).toBeVisible();
+	await expect(
+		participant.getByRole("navigation", {
+			name: "参加者メニュー",
+			exact: true,
+		}),
+	).toBeVisible();
+	await participant.screenshot({
+		path: join(root, "output/playwright/registered-home-mobile.png"),
+		fullPage: true,
+	});
+	await participant.goto(`${eventPath}/qr`);
+	const qr = participant.locator(".venue-qr svg");
+	await expect(qr.locator("title")).toHaveText("イベント参加用QRコード");
+	await expect(
+		participant.getByRole("link", { name: "参加ページを開く", exact: true }),
+	).toHaveAttribute("href", `${baseURL}${eventPath}`);
+	const expectedQr = renderToStaticMarkup(
+		createElement(QRCodeSVG, {
+			value: `${baseURL}${eventPath}`,
+			size: 280,
+			marginSize: 2,
+			level: "M",
+			title: "イベント参加用QRコード",
+		}),
+	);
+	const expectedPaths = [...expectedQr.matchAll(/\sd="([^"]+)"/g)].map(
+		(match) => match[1],
+	);
+	assert.equal(
+		await qr.locator("path").last().getAttribute("d"),
+		expectedPaths.at(-1),
+		"The rendered QR must encode this event's enrollment URL.",
+	);
+	await participant.screenshot({
+		path: join(root, "output/playwright/venue-qr-mobile.png"),
+		fullPage: true,
+	});
+	assert.ok(
+		await participant.evaluate(
+			() => document.documentElement.scrollWidth <= innerWidth,
+		),
+		"Registration QR must fit the mobile viewport.",
+	);
 	assert.deepEqual(errors, [], "No unhandled browser errors are allowed.");
 	console.info(
-		"Browser QA passed: organizer link, first-run event and talks, delete, four-screen timer sync, pause/resume/reload, next/overtime, reconnect, and mobile layout.",
+		"Browser QA passed: organizer access, comment management, first-run event and talks, four-screen timer sync, reconnect, mobile layouts, registration/X profile, registered home and event enrollment QR.",
 	);
 } catch (error) {
+	console.error(error instanceof Error ? error.message : error);
 	if (browser) {
 		const page = browser
 			.contexts()
@@ -337,15 +463,29 @@ try {
 	await browser?.close();
 	if (server && server.exitCode === null) {
 		const exited = once(server, "exit");
-		try {
-			process.kill(-server.pid, "SIGTERM");
-		} catch {}
+		if (process.platform === "win32")
+			spawnSync("taskkill", ["/PID", String(server.pid), "/T", "/F"], {
+				windowsHide: true,
+				stdio: "ignore",
+			});
+		else {
+			try {
+				process.kill(-server.pid, "SIGTERM");
+			} catch {}
+		}
 		await Promise.race([exited, delay(3000)]);
-		if (server.exitCode === null) {
+		if (server.exitCode === null && process.platform !== "win32") {
 			try {
 				process.kill(-server.pid, "SIGKILL");
 			} catch {}
 		}
 	}
-	await rm(persistence, { recursive: true, force: true });
+	assert.equal(dirname(resolve(persistence)), resolve(tmpdir()));
+	assert.ok(basename(persistence).startsWith("lt-browser-"));
+	await rm(persistence, {
+		recursive: true,
+		force: true,
+		maxRetries: 10,
+		retryDelay: 300,
+	});
 }

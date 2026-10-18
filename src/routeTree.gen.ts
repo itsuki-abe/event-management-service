@@ -16,6 +16,7 @@ import { Route as LiveRouteImport } from './routes/live'
 import { Route as ScreenRouteImport } from './routes/screen'
 import { Route as SpeakerRouteImport } from './routes/speaker'
 import { Route as AdminCommentsRouteImport } from './routes/admin_.comments'
+import { Route as AdminGuideRouteImport } from './routes/admin_.guide'
 import { Route as ApiEngagementRouteImport } from './routes/api.engagement'
 import { Route as ApiEventsRouteImport } from './routes/api.events'
 import { Route as ApiHealthRouteImport } from './routes/api.health'
@@ -25,6 +26,7 @@ import { Route as ApiShareRouteImport } from './routes/api.share'
 import { Route as EventsEventIdRouteImport } from './routes/events.$eventId'
 import { Route as EventsEventIdConnectRouteImport } from './routes/events.$eventId_.connect'
 import { Route as EventsEventIdGuideRouteImport } from './routes/events.$eventId_.guide'
+import { Route as EventsEventIdParticipantsRouteImport } from './routes/events.$eventId_.participants'
 import { Route as EventsEventIdQrRouteImport } from './routes/events.$eventId_.qr'
 import { Route as EventsEventIdTeamRouteImport } from './routes/events.$eventId_.team'
 import { Route as ApiEventsEventIdSplatRouteImport } from './routes/api.events.$eventId.$'
@@ -62,6 +64,11 @@ const SpeakerRoute = SpeakerRouteImport.update({
 const AdminCommentsRoute = AdminCommentsRouteImport.update({
   id: '/admin_/comments',
   path: '/admin/comments',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminGuideRoute = AdminGuideRouteImport.update({
+  id: '/admin_/guide',
+  path: '/admin/guide',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiEngagementRoute = ApiEngagementRouteImport.update({
@@ -109,6 +116,12 @@ const EventsEventIdGuideRoute = EventsEventIdGuideRouteImport.update({
   path: '/events/$eventId/guide',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EventsEventIdParticipantsRoute =
+  EventsEventIdParticipantsRouteImport.update({
+    id: '/events/$eventId_/participants',
+    path: '/events/$eventId/participants',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const EventsEventIdQrRoute = EventsEventIdQrRouteImport.update({
   id: '/events/$eventId_/qr',
   path: '/events/$eventId/qr',
@@ -133,6 +146,7 @@ export interface FileRoutesByFullPath {
   '/screen': typeof ScreenRoute
   '/speaker': typeof SpeakerRoute
   '/admin/comments': typeof AdminCommentsRoute
+  '/admin/guide': typeof AdminGuideRoute
   '/api/engagement': typeof ApiEngagementRoute
   '/api/events': typeof ApiEventsRouteWithChildren
   '/api/health': typeof ApiHealthRoute
@@ -142,6 +156,7 @@ export interface FileRoutesByFullPath {
   '/events/$eventId': typeof EventsEventIdRoute
   '/events/$eventId/connect': typeof EventsEventIdConnectRoute
   '/events/$eventId/guide': typeof EventsEventIdGuideRoute
+  '/events/$eventId/participants': typeof EventsEventIdParticipantsRoute
   '/events/$eventId/qr': typeof EventsEventIdQrRoute
   '/events/$eventId/team': typeof EventsEventIdTeamRoute
   '/api/events/$eventId/$': typeof ApiEventsEventIdSplatRoute
@@ -154,6 +169,7 @@ export interface FileRoutesByTo {
   '/screen': typeof ScreenRoute
   '/speaker': typeof SpeakerRoute
   '/admin/comments': typeof AdminCommentsRoute
+  '/admin/guide': typeof AdminGuideRoute
   '/api/engagement': typeof ApiEngagementRoute
   '/api/events': typeof ApiEventsRouteWithChildren
   '/api/health': typeof ApiHealthRoute
@@ -163,6 +179,7 @@ export interface FileRoutesByTo {
   '/events/$eventId': typeof EventsEventIdRoute
   '/events/$eventId/connect': typeof EventsEventIdConnectRoute
   '/events/$eventId/guide': typeof EventsEventIdGuideRoute
+  '/events/$eventId/participants': typeof EventsEventIdParticipantsRoute
   '/events/$eventId/qr': typeof EventsEventIdQrRoute
   '/events/$eventId/team': typeof EventsEventIdTeamRoute
   '/api/events/$eventId/$': typeof ApiEventsEventIdSplatRoute
@@ -176,6 +193,7 @@ export interface FileRoutesById {
   '/screen': typeof ScreenRoute
   '/speaker': typeof SpeakerRoute
   '/admin_/comments': typeof AdminCommentsRoute
+  '/admin_/guide': typeof AdminGuideRoute
   '/api/engagement': typeof ApiEngagementRoute
   '/api/events': typeof ApiEventsRouteWithChildren
   '/api/health': typeof ApiHealthRoute
@@ -185,6 +203,7 @@ export interface FileRoutesById {
   '/events/$eventId': typeof EventsEventIdRoute
   '/events/$eventId_/connect': typeof EventsEventIdConnectRoute
   '/events/$eventId_/guide': typeof EventsEventIdGuideRoute
+  '/events/$eventId_/participants': typeof EventsEventIdParticipantsRoute
   '/events/$eventId_/qr': typeof EventsEventIdQrRoute
   '/events/$eventId_/team': typeof EventsEventIdTeamRoute
   '/api/events/$eventId/$': typeof ApiEventsEventIdSplatRoute
@@ -199,6 +218,7 @@ export interface FileRouteTypes {
     | '/screen'
     | '/speaker'
     | '/admin/comments'
+    | '/admin/guide'
     | '/api/engagement'
     | '/api/events'
     | '/api/health'
@@ -208,6 +228,7 @@ export interface FileRouteTypes {
     | '/events/$eventId'
     | '/events/$eventId/connect'
     | '/events/$eventId/guide'
+    | '/events/$eventId/participants'
     | '/events/$eventId/qr'
     | '/events/$eventId/team'
     | '/api/events/$eventId/$'
@@ -220,6 +241,7 @@ export interface FileRouteTypes {
     | '/screen'
     | '/speaker'
     | '/admin/comments'
+    | '/admin/guide'
     | '/api/engagement'
     | '/api/events'
     | '/api/health'
@@ -229,6 +251,7 @@ export interface FileRouteTypes {
     | '/events/$eventId'
     | '/events/$eventId/connect'
     | '/events/$eventId/guide'
+    | '/events/$eventId/participants'
     | '/events/$eventId/qr'
     | '/events/$eventId/team'
     | '/api/events/$eventId/$'
@@ -241,6 +264,7 @@ export interface FileRouteTypes {
     | '/screen'
     | '/speaker'
     | '/admin_/comments'
+    | '/admin_/guide'
     | '/api/engagement'
     | '/api/events'
     | '/api/health'
@@ -250,6 +274,7 @@ export interface FileRouteTypes {
     | '/events/$eventId'
     | '/events/$eventId_/connect'
     | '/events/$eventId_/guide'
+    | '/events/$eventId_/participants'
     | '/events/$eventId_/qr'
     | '/events/$eventId_/team'
     | '/api/events/$eventId/$'
@@ -263,6 +288,7 @@ export interface RootRouteChildren {
   ScreenRoute: typeof ScreenRoute
   SpeakerRoute: typeof SpeakerRoute
   AdminCommentsRoute: typeof AdminCommentsRoute
+  AdminGuideRoute: typeof AdminGuideRoute
   ApiEngagementRoute: typeof ApiEngagementRoute
   ApiEventsRoute: typeof ApiEventsRouteWithChildren
   ApiHealthRoute: typeof ApiHealthRoute
@@ -272,6 +298,7 @@ export interface RootRouteChildren {
   EventsEventIdRoute: typeof EventsEventIdRoute
   EventsEventIdConnectRoute: typeof EventsEventIdConnectRoute
   EventsEventIdGuideRoute: typeof EventsEventIdGuideRoute
+  EventsEventIdParticipantsRoute: typeof EventsEventIdParticipantsRoute
   EventsEventIdQrRoute: typeof EventsEventIdQrRoute
   EventsEventIdTeamRoute: typeof EventsEventIdTeamRoute
 }
@@ -325,6 +352,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/comments'
       fullPath: '/admin/comments'
       preLoaderRoute: typeof AdminCommentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin_/guide': {
+      id: '/admin_/guide'
+      path: '/admin/guide'
+      fullPath: '/admin/guide'
+      preLoaderRoute: typeof AdminGuideRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/engagement': {
@@ -390,6 +424,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EventsEventIdGuideRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/events/$eventId_/participants': {
+      id: '/events/$eventId_/participants'
+      path: '/events/$eventId/participants'
+      fullPath: '/events/$eventId/participants'
+      preLoaderRoute: typeof EventsEventIdParticipantsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/events/$eventId_/qr': {
       id: '/events/$eventId_/qr'
       path: '/events/$eventId/qr'
@@ -434,6 +475,7 @@ const rootRouteChildren: RootRouteChildren = {
   ScreenRoute: ScreenRoute,
   SpeakerRoute: SpeakerRoute,
   AdminCommentsRoute: AdminCommentsRoute,
+  AdminGuideRoute: AdminGuideRoute,
   ApiEngagementRoute: ApiEngagementRoute,
   ApiEventsRoute: ApiEventsRouteWithChildren,
   ApiHealthRoute: ApiHealthRoute,
@@ -443,6 +485,7 @@ const rootRouteChildren: RootRouteChildren = {
   EventsEventIdRoute: EventsEventIdRoute,
   EventsEventIdConnectRoute: EventsEventIdConnectRoute,
   EventsEventIdGuideRoute: EventsEventIdGuideRoute,
+  EventsEventIdParticipantsRoute: EventsEventIdParticipantsRoute,
   EventsEventIdQrRoute: EventsEventIdQrRoute,
   EventsEventIdTeamRoute: EventsEventIdTeamRoute,
 }

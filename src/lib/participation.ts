@@ -4,6 +4,11 @@ export type Participant = {
 	profile: string | null;
 	xUsername: string | null;
 };
+export type ParticipantDirectory = {
+	event: { id: number; name: string };
+	currentParticipantId: number;
+	participants: Participant[];
+};
 export type Device = { id: number; name: string; current: boolean };
 export type Participation = {
 	event: { id: number; name: string };
@@ -13,6 +18,15 @@ export type Participation = {
 };
 export type Pairing = { code: string; expiresAt: number };
 export type PairingPreview = { deviceName: string; expiresAt: number };
+
+export class ParticipationApiError extends Error {
+	constructor(
+		message: string,
+		readonly status: number,
+	) {
+		super(message);
+	}
+}
 
 export async function participationApi<T>(
 	eventId: string,
@@ -28,8 +42,9 @@ export async function participationApi<T>(
 	});
 	const data = (await response.json()) as T & { error?: string };
 	if (!response.ok)
-		throw new Error(
+		throw new ParticipationApiError(
 			data.error ?? "通信に失敗しました。もう一度お試しください。",
+			response.status,
 		);
 	return data as T;
 }

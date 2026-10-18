@@ -1,22 +1,21 @@
-import { env } from "cloudflare:workers";
-
 export const organizerCookieName = "lt_organizer";
 
-export function organizerKey() {
-	const key = "ORGANIZER_KEY" in env ? env.ORGANIZER_KEY : undefined;
-	return typeof key === "string" &&
-		key &&
-		key !== "replace-with-a-long-random-key"
-		? key
+export function organizerKey(value: unknown): string | undefined {
+	return typeof value === "string" &&
+		value.length > 0 &&
+		value !== "replace-with-a-long-random-key"
+		? value
 		: undefined;
 }
 
-export function isOrganizer(request: Request) {
-	const key = organizerKey();
+export function isOrganizer(request: Request, value: unknown): boolean {
+	const key = organizerKey(value);
+	if (!key) return false;
 	const cookie = request.headers
-		.get("Cookie")
-		?.split(/;\s*/)
-		.find((item) => item.startsWith(`${organizerCookieName}=`))
+		.get("cookie")
+		?.split(";")
+		.map((part) => part.trim())
+		.find((part) => part.startsWith(`${organizerCookieName}=`))
 		?.slice(organizerCookieName.length + 1);
-	return Boolean(key && cookie === encodeURIComponent(key));
+	return cookie === encodeURIComponent(key);
 }

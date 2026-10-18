@@ -1,3 +1,4 @@
+import { env } from "cloudflare:workers";
 import { and, asc, count, desc, eq, isNull, sql } from "drizzle-orm";
 import { db } from "../../db";
 import {
@@ -40,7 +41,12 @@ async function hash(token: string) {
 	).join("");
 }
 async function requireOrganizer(request: Request) {
-	if (!isOrganizer(request))
+	if (
+		!isOrganizer(
+			request,
+			"ORGANIZER_KEY" in env ? env.ORGANIZER_KEY : undefined,
+		)
+	)
 		throw new ApiError(403, "運営用リンクから開いてください。");
 }
 async function participant(

@@ -1,4 +1,5 @@
 import {
+	ContactRound,
 	Home,
 	Laptop,
 	MapPin,
@@ -17,10 +18,12 @@ export type WorkspaceSection =
 	| "live"
 	| "speaker"
 	| "admin"
+	| "guide-admin"
 	| "comments"
 	| "engagement"
 	| "qr"
 	| "guide"
+	| "participants"
 	| "team";
 
 export function WorkspaceShell({
@@ -57,8 +60,14 @@ export function WorkspaceShell({
 			icon: MessageCircle,
 		},
 		{ id: "team", label: "チーム", href: `${eventPath}/team`, icon: Users },
+		{
+			id: "participants",
+			label: "参加者",
+			href: `${eventPath}/participants`,
+			icon: ContactRound,
+		},
 	];
-	const management = [
+	const managementNavigation = [
 		{ id: "admin", label: "LT進行", href: "/admin", icon: Settings2 },
 		{
 			id: "comments",
@@ -67,20 +76,29 @@ export function WorkspaceShell({
 			icon: MessagesSquare,
 		},
 	];
+	const management = [
+		...managementNavigation,
+		{
+			id: "guide-admin",
+			label: "会場案内の設定",
+			href: `/admin/guide?eventId=${encodeURIComponent(eventId)}`,
+		},
+	];
 	function items(includeManagement = false) {
-		return [...navigation, ...(includeManagement ? management : [])].map(
-			(item) => (
-				<a
-					key={item.id}
-					href={item.href}
-					className={active === item.id ? "active" : undefined}
-					aria-current={active === item.id ? "page" : undefined}
-				>
-					<item.icon size={23} aria-hidden="true" />
-					<span>{item.label}</span>
-				</a>
-			),
-		);
+		return [
+			...navigation,
+			...(includeManagement ? managementNavigation : []),
+		].map((item) => (
+			<a
+				key={item.id}
+				href={item.href}
+				className={active === item.id ? "active" : undefined}
+				aria-current={active === item.id ? "page" : undefined}
+			>
+				<item.icon size={23} aria-hidden="true" />
+				<span>{item.label}</span>
+			</a>
+		));
 	}
 	function itemsForManagement() {
 		return management.map((item) => (
@@ -141,10 +159,10 @@ export function WorkspaceShell({
 				)}
 			</header>
 			<main id="main-content" className="wc-page">
-				{["admin", "comments"].includes(section) && (
+				{["admin", "comments", "guide-admin"].includes(section) && (
 					<section className="wc-management" aria-label="運営管理">
 						<h1>運営管理</h1>
-						<p>発表の進行とコメントを、ここから管理します。</p>
+						<p>発表の進行・コメント・会場案内を、ここから管理します。</p>
 						<nav className="wc-section-tabs" aria-label="運営メニュー">
 							{itemsForManagement()}
 						</nav>
