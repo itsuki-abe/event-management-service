@@ -505,8 +505,21 @@ export function ParticipationPage({
 					<p className="lead">
 						{desktop
 							? "このPCも、同じ参加者として利用できます。"
-							: "参加登録が完了しました。次は、お使いのPC／Macを接続しましょう。"}
+							: "参加登録が完了しました。LTに反応したり、会場案内を確認したりできます。"}
 					</p>
+					{!desktop && (
+						<div className="button-row">
+							<a
+								className="button"
+								href={`/engagement?eventId=${encodeURIComponent(eventId)}`}
+							>
+								LTライブへ
+							</a>
+							<a className="button secondary" href={`/events/${eventId}/guide`}>
+								会場案内
+							</a>
+						</div>
+					)}
 					<a className="back-link" href={`/events/${eventId}/participants`}>
 						参加者一覧で、今日の仲間を見つける →
 					</a>
@@ -541,11 +554,10 @@ export function ParticipationPage({
 						</section>
 					) : (
 						!desktop && (
-							<section className="card">
-								<div className="section-heading">
-									<span className="number-badge">02</span>
-									<h2>PC／Macをつなぐ</h2>
-								</div>
+							<details className="card" open={code ? true : undefined}>
+								<summary className="section-heading">
+									<h2>PC／Macでも使う（登壇する方など）</h2>
+								</summary>
 								<ol className="instructions">
 									<li>
 										自分のPC／Macで、次のURLを開きます。
@@ -594,7 +606,7 @@ export function ParticipationPage({
 										{busy ? "確認しています…" : "接続する端末を確認"}
 									</button>
 								</form>
-							</section>
+							</details>
 						)
 					)}
 					<section className="card">

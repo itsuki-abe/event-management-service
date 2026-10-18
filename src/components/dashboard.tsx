@@ -4,6 +4,7 @@ import {
 	Info,
 	Laptop,
 	MapPin,
+	Presentation,
 	Users,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
@@ -15,14 +16,15 @@ import {
 	liveSnapshotSchema,
 } from "../lib/lt";
 import { type Participation, participationApi } from "../lib/participation";
+import type { Guide as VenueGuide } from "../lib/venue";
 import { SpeakerAvatar } from "./speaker-avatar";
+import { WifiCard } from "./venue";
 import { WorkspaceShell } from "./workspace";
 
-type Guide = { id: number; category: string; title: string; content: string };
 export function Dashboard() {
 	const [live, setLive] = useState<LiveSnapshot | null>(null);
 	const [session, setSession] = useState<Participation | null>(null);
-	const [notice, setNotice] = useState<Guide | null>(null);
+	const [guides, setGuides] = useState<VenueGuide[]>([]);
 	const [error, setError] = useState("");
 	const [tick, setTick] = useState(0);
 	const [origin, setOrigin] = useState("");
@@ -44,27 +46,26 @@ export function Dashboard() {
 					);
 				const snapshot = liveSnapshotSchema.parse(await response.json());
 				let participation: Participation | null = null;
-				let guide: Guide | null = null;
+				let published: VenueGuide[] = [];
 				if (snapshot.event) {
 					participation = await participationApi<Participation>(
 						String(snapshot.event.id),
 						"session",
 					);
 					if (participation.participant) {
-						const venue = await participationApi<{ guides: Guide[] }>(
+						const venue = await participationApi<{ guides: VenueGuide[] }>(
 							String(snapshot.event.id),
 							"guide",
 						);
-						guide =
-							venue.guides.find((item) =>
-								/^(notice|announcement|important)$/.test(item.category),
-							) ?? null;
+						published = venue.guides.filter(
+							(item) => item.isVisible && item.content.trim(),
+						);
 					}
 				}
 				if (active) {
 					setLive(snapshot);
 					setSession(participation);
-					setNotice(guide);
+					setGuides(published);
 					clock.current = {
 						server: snapshot.serverNow,
 						received: performance.now(),
@@ -87,6 +88,11 @@ export function Dashboard() {
 		};
 	}, []);
 	const participant = session?.participant;
+	const notice = guides.find((item) => item.category === "notice");
+	const wifi = guides.find((item) => item.category === "wifi");
+	const myTalk = live?.talks.find(
+		(talk) => talk.speakerId === participant?.id && talk.status !== "ended",
+	);
 	const eventPath = live?.event ? `/events/${live.event.id}` : null;
 	const current = live?.talks.find((talk) => talk.id === live.selectedTalkId);
 	const currentIndex =
@@ -125,9 +131,7 @@ export function Dashboard() {
 								<p>
 									スマホのカメラでQRコードを読み取り、会場で呼ばれたい名前を登録しましょう。
 								</p>
-								<p>
-									登録が終わったら、お使いのPC／Macを接続します。スマホとPCで、同じ参加者としてイベントを楽しめます。
-								</p>
+								<p>登壇する方は、登録後にPC／Macも接続できます。</p>
 								<div className="wc-registration-actions">
 									<p>スマホで開いている方は、こちらから。</p>
 									<a className="wc-button wc-primary wc-full" href={eventPath}>
@@ -170,6 +174,26 @@ export function Dashboard() {
 					{error}
 					{live && " 最後に取得した情報を表示しています。"}
 				</p>
+			)}
+			{notice && (
+				<div className="wc-notice">
+					<Info size={22} aria-hidden="true" />
+					<div>
+						<strong>{notice.title}</strong>
+						<p>{notice.content}</p>
+					</div>
+				</div>
+			)}
+			{wifi && <WifiCard guide={wifi} />}
+			{myTalk && (
+				<a className="wc-link-row wc-speaker-row" href="/speaker">
+					<Presentation size={24} aria-hidden="true" />
+					<span>
+						あなたの発表「{myTalk.title}」
+						<small>持ち時間の確認と画面共有の準備はこちら</small>
+					</span>
+					<ChevronRight size={22} aria-hidden="true" />
+				</a>
 			)}
 			<div className="wc-home-layout">
 				<section className="wc-home-intro">
@@ -232,7 +256,10 @@ export function Dashboard() {
 								</small>
 							</div>
 						</div>
-						<a className="wc-button wc-primary wc-full" href="/live">
+						<a
+							className="wc-button wc-primary wc-full"
+							href={`/engagement?eventId=${live?.event?.id ?? 1}`}
+						>
 							ライブに参加
 							<ArrowRight size={21} aria-hidden="true" />
 						</a>
@@ -252,33 +279,14 @@ export function Dashboard() {
 							</span>
 							<ChevronRight size={22} aria-hidden="true" />
 						</a>
-						<a className="wc-link-row" href={`${eventPath}/team`}>
-							<Users size={24} aria-hidden="true" />
-							<span>
-								チームを見る<small>所属先と集合場所</small>
-							</span>
-							<ChevronRight size={22} aria-hidden="true" />
-						</a>
 					</div>
 				</section>
 			</div>
-			{notice && (
-				<div className="wc-notice">
-					<Info size={22} aria-hidden="true" />
-					<div>
-						<strong>{notice.title}</strong>
-						<p>{notice.content}</p>
-					</div>
-				</div>
-			)}
 			<section className="wc-participation-banner">
 				<div>
 					<span className="wc-badge blue">参加登録済み</span>
 					<h2>{participant.nickname}さんの参加パス</h2>
-					<p>
-						{session.devices.length}
-						台の端末で参加しています。プロフィールや接続端末を確認できます。
-					</p>
+					<p>プロフィールの編集や、登壇用のPC／Macの接続ができます。</p>
 				</div>
 				<div className="wc-banner-actions">
 					<a className="wc-button wc-primary" href={eventPath}>

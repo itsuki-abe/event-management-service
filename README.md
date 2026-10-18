@@ -41,7 +41,7 @@ bun run dev
 | `/events/1/connect` | PCの接続用QR |
 | `/events/1/guide` | 会場案内 |
 | `/events/1/participants` | 参加者一覧・Xプロフィール（参加登録が必要） |
-| `/engagement?eventId=1` | LTライブ・リアクション・コメント |
+| `/engagement?eventId=1` | LTライブ・リアクション・コメント（`/live` から転送） |
 | `/speaker` | 登壇者向け表示 |
 | `/screen` | 会場スクリーン |
 | `/admin` | LT進行（運営認証が必要） |
