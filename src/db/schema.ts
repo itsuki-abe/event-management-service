@@ -172,6 +172,44 @@ export const eventLiveState = sqliteTable(
 	],
 );
 
+// Presenter PC screen shares. WebRTC offers/answers are exchanged through
+// screen_share_signals; the projector shows event_live_state.projected_session_id.
+export const screenShares = sqliteTable(
+	"screen_shares",
+	{
+		sessionId: integer("session_id").primaryKey(),
+		eventId: integer("event_id").notNull(),
+		talkId: integer("talk_id").notNull(),
+		startedAt: integer("started_at").notNull(),
+		heartbeatAt: integer("heartbeat_at").notNull(),
+	},
+	(t) => [
+		foreignKey({
+			columns: [t.sessionId, t.eventId],
+			foreignColumns: [deviceSessions.id, deviceSessions.eventId],
+		}),
+		foreignKey({
+			columns: [t.talkId, t.eventId],
+			foreignColumns: [talks.id, talks.eventId],
+		}).onDelete("cascade"),
+		index("screen_shares_event_idx").on(t.eventId),
+	],
+);
+
+export const screenShareSignals = sqliteTable(
+	"screen_share_signals",
+	{
+		id: text().primaryKey(),
+		sessionId: integer("session_id")
+			.notNull()
+			.references(() => screenShares.sessionId, { onDelete: "cascade" }),
+		offer: text().notNull(),
+		answer: text(),
+		createdAt: integer("created_at").notNull(),
+	},
+	(t) => [index("screen_share_signals_session_idx").on(t.sessionId)],
+);
+
 export const chatMessages = sqliteTable(
 	"chat_messages",
 	{

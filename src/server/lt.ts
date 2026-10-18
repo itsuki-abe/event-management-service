@@ -17,10 +17,13 @@ class LiveError extends Error {
 }
 
 const nowSeconds = () => Math.floor(Date.now() / 1000);
+export const SHARE_TIMEOUT_SECONDS = 8;
 const noStore = { "Cache-Control": "no-store" };
 
 export async function readSnapshot() {
-	const [events, talks, states] = await env.DB.batch([
+	const [events, talks, states, shares] = await env.DB.batch<
+		Record<string, unknown>
+	>([
 		env.DB.prepare("SELECT id, name FROM events ORDER BY id LIMIT 1"),
 		env.DB.prepare(`SELECT t.id, t.title, p.nickname AS speaker, t.sort_order AS sortOrder,
 			t.duration_seconds AS durationSeconds, t.status, t.resumed_at AS resumedAt,
@@ -28,16 +31,36 @@ export async function readSnapshot() {
 			JOIN participants p ON p.id = t.speaker_id AND p.event_id = t.event_id
 			WHERE t.event_id = (SELECT id FROM events ORDER BY id LIMIT 1)
 			ORDER BY t.sort_order, t.id`),
-		env.DB.prepare(`SELECT selected_talk_id AS selectedTalkId, revision FROM event_live_state
+		env.DB.prepare(`SELECT selected_talk_id AS selectedTalkId, projected_session_id AS projectedSessionId,
+			revision FROM event_live_state
 			WHERE event_id = (SELECT id FROM events ORDER BY id LIMIT 1)`),
+		env.DB.prepare(`SELECT session_id AS sessionId, talk_id AS talkId, started_at AS startedAt,
+			heartbeat_at > ? AS live FROM screen_shares
+			WHERE event_id = (SELECT id FROM events ORDER BY id LIMIT 1)
+			ORDER BY started_at DESC`).bind(nowSeconds() - SHARE_TIMEOUT_SECONDS),
 	]);
 	const state = z
-		.object({ selectedTalkId: z.number().nullable(), revision: z.string() })
-		.parse(states.results[0] ?? { selectedTalkId: null, revision: "0" });
+		.object({
+			selectedTalkId: z.number().nullable(),
+			projectedSessionId: z.number().nullable(),
+			revision: z.string(),
+		})
+		.parse(
+			states.results[0] ?? {
+				selectedTalkId: null,
+				projectedSessionId: null,
+				revision: "0",
+			},
+		);
 	return liveSnapshotSchema.parse({
 		event: events.results[0] ?? null,
 		talks: talks.results,
 		selectedTalkId: state.selectedTalkId,
+		projectedSessionId: state.projectedSessionId,
+		shares: shares.results.map((share) => ({
+			...share,
+			live: Boolean(share.live),
+		})),
 		revision: state.revision,
 		serverNow: Date.now() / 1000,
 	});
@@ -140,6 +163,20 @@ async function applyAction(action: LiveAction) {
 				),
 			);
 		}
+	} else if (action.action === "project") {
+		if (
+			!snapshot.shares.some(
+				(share) => share.sessionId === action.sessionId && share.live,
+			)
+		)
+			throw new LiveError("この共有は切断されています。", 409);
+		mutations.push(
+			statement(
+				`UPDATE event_live_state SET projected_session_id = ? WHERE event_id = ? AND ${guard}`,
+				action.sessionId,
+				eventId,
+			),
+		);
 	} else {
 		const talk = snapshot.talks.find((item) => item.id === action.talkId);
 		if (!talk) throw new LiveError("発表が見つかりません。", 404);
@@ -357,17 +394,19 @@ export function login(request: Request) {
 	});
 }
 
-export async function postLive(request: Request) {
+export function isOrganizer(request: Request) {
 	const key = organizerKey();
 	const cookie = request.headers
 		.get("Cookie")
 		?.split(/;\s*/)
 		.find((item) => item.startsWith(`${cookieName}=`))
 		?.slice(cookieName.length + 1);
+	return Boolean(key && cookie && cookie === encodeURIComponent(key));
+}
+
+export async function postLive(request: Request) {
 	if (
-		!key ||
-		!cookie ||
-		cookie !== encodeURIComponent(key) ||
+		!isOrganizer(request) ||
 		!request.headers.get("Content-Type")?.startsWith("application/json")
 	) {
 		return Response.json(

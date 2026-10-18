@@ -47,6 +47,12 @@ async function addTalk(page, title, speaker, duration) {
 const current = (page) =>
 	page.getByRole("region", { name: "現在の発表", exact: true });
 const time = (page) => current(page).getByText(/^[−]?\d{2,}:\d{2}$/);
+const playing = (video) =>
+	expect
+		.poll(() => video.evaluate((element) => element.videoWidth), {
+			timeout: 30_000,
+		})
+		.toBeGreaterThan(0);
 const status = (page, text) =>
 	expect(current(page).getByText(text, { exact: true }).first()).toBeVisible();
 
@@ -136,6 +142,21 @@ try {
 		["/live", "/screen", "/speaker"].map(async (path) => {
 			const page = await viewerContext.newPage();
 			page.on("pageerror", (error) => errors.push(error.message));
+			// Stands in for the browser's screen picker.
+			await page.addInitScript(() => {
+				navigator.mediaDevices.getDisplayMedia = async () => {
+					const canvas = Object.assign(document.createElement("canvas"), {
+						width: 640,
+						height: 360,
+					});
+					const context = canvas.getContext("2d");
+					setInterval(() => {
+						context.fillStyle = `hsl(${Date.now() % 360} 70% 50%)`;
+						context.fillRect(0, 0, 640, 360);
+					}, 100);
+					return canvas.captureStream(10);
+				};
+			});
 			await page.goto(path);
 			await expect(page.locator(".connection")).toHaveCount(0);
 			return page;
@@ -206,6 +227,67 @@ try {
 		.click();
 	for (const page of [admin, ...viewers]) await status(page, "時間超過");
 	await admin.getByRole("button", { name: "発表を終了", exact: true }).click();
+
+	const [, screen, speaker] = viewers;
+	const source = admin.getByRole("complementary", { name: "発表者の共有" });
+	const sharePanel = speaker.getByRole("region", { name: "画面共有" });
+	await expect(source).toContainText("次の発表はありません。");
+	await addTalk(admin, "画面共有の発表", "発表者D", "5");
+	await expect(source).toContainText("発表者の共有を待っています");
+	await sharePanel
+		.getByRole("button", { name: "画面共有を準備する", exact: true })
+		.click();
+	await expect(
+		sharePanel.getByText("共有準備完了", { exact: true }),
+	).toBeVisible();
+	await expect(
+		speaker.getByRole("heading", { name: "画面共有の発表", exact: true }),
+	).toBeVisible();
+	await expect(source).toContainText("次の発表者の準備");
+	await expect(source.getByText("共有準備完了", { exact: true })).toBeVisible();
+	await playing(source.locator("video"));
+	await source
+		.getByRole("button", { name: "この共有を投影する", exact: true })
+		.click();
+	await expect(
+		source.getByRole("button", { name: "投影先を確認済み", exact: true }),
+	).toBeDisabled();
+	await expect(sharePanel.getByText("投影中", { exact: true })).toBeVisible();
+	await playing(screen.locator(".projection-slide video"));
+	await admin.getByRole("button", { name: "次の発表へ", exact: true }).click();
+	await expect(source).toContainText("選択中の共有");
+	await expect(source.getByText("投影中", { exact: true })).toBeVisible();
+	await admin
+		.getByRole("button", { name: "タイマー開始", exact: true })
+		.click();
+	await status(screen, "発表中");
+	await sharePanel
+		.getByRole("button", { name: "共有を停止する", exact: true })
+		.click();
+	await expect(sharePanel.getByText("共有が切断されました")).toBeVisible();
+	await expect(
+		screen.getByRole("heading", { name: "画面共有が切断されました" }),
+	).toBeVisible();
+	await status(admin, "発表中");
+	await sharePanel
+		.getByRole("button", { name: "画面共有を準備する", exact: true })
+		.click();
+	await playing(screen.locator(".projection-slide video"));
+	await expect(sharePanel.getByText("投影中", { exact: true })).toBeVisible();
+	await speaker.reload();
+	await expect(
+		screen.getByRole("heading", { name: "画面共有が切断されました" }),
+	).toBeVisible();
+	await expect(
+		speaker
+			.getByRole("region", { name: "画面共有" })
+			.getByText("共有が切断されました"),
+	).toBeVisible();
+	await admin.getByRole("button", { name: "発表を終了", exact: true }).click();
+	await expect(
+		screen.getByRole("heading", { name: "画面共有が切断されました" }),
+	).toHaveCount(0);
+
 	await viewerContext.setOffline(true);
 	await expect(
 		viewers[0].getByText("再接続中… 最後に取得した情報を表示しています", {
@@ -215,7 +297,7 @@ try {
 	await viewerContext.setOffline(false);
 	for (const page of viewers)
 		await expect(page.locator(".connection")).toHaveCount(0);
-	for (const page of viewers) {
+	for (const page of [viewers[0], screen]) {
 		await expect(page.getByRole("button")).toHaveCount(0);
 	}
 	for (const page of [admin, ...viewers]) {
@@ -229,7 +311,7 @@ try {
 	}
 	assert.deepEqual(errors, [], "No unhandled browser errors are allowed.");
 	console.info(
-		"Browser QA passed: organizer link, first-run event and talks, delete, four-screen timer sync, pause/resume/reload, next/overtime, reconnect, and mobile layout.",
+		"Browser QA passed: organizer link, first-run event and talks, delete, four-screen timer sync, pause/resume/reload, next/overtime, screen share preview/projection/disconnect, reconnect, and mobile layout.",
 	);
 } catch (error) {
 	if (browser) {
