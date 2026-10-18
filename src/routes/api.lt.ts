@@ -4,7 +4,7 @@ import { getLive, postLive } from "../server/lt";
 export const Route = createFileRoute("/api/lt")({
 	server: {
 		handlers: {
-			GET: getLive,
+			GET: ({ request }) => getLive(request),
 			POST: ({ request }) => postLive(request),
 		},
 	},

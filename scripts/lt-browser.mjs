@@ -59,7 +59,9 @@ async function addTalk(page, title, speaker, duration) {
 	if (!(await form.evaluate((details) => details.open)))
 		await form.locator("summary").click();
 	await form.getByLabel("タイトル", { exact: true }).fill(title);
-	await form.getByLabel("発表者", { exact: true }).fill(speaker);
+	await form.getByLabel("発表者", { exact: true }).selectOption({
+		label: speaker,
+	});
 	await form.getByLabel("持ち時間", { exact: true }).fill(duration);
 	await form.getByRole("button", { name: "追加", exact: true }).click();
 	await expect(page.locator(".op-talk", { hasText: title })).toBeVisible();
@@ -168,7 +170,7 @@ try {
 	const gate = admin.getByRole("heading", {
 		name: "運営用リンクから開いてください",
 	});
-	await admin.goto("/");
+	await admin.goto("/live");
 	const menu = admin.getByRole("navigation", {
 		name: "メインメニュー",
 		exact: true,
@@ -196,8 +198,24 @@ try {
 		.getByLabel("イベント名", { exact: true })
 		.fill("ブラウザーQAイベント");
 	await admin.getByRole("button", { name: "作成", exact: true }).click();
+	await expect(admin.getByLabel("イベント名", { exact: true })).toHaveCount(0);
+	const otherContext = await browser.newContext({ baseURL });
+	for (const [context, nickname] of [
+		[viewerContext, "発表者A"],
+		[otherContext, "発表者B"],
+	]) {
+		const response = await context.request.post("/api/events/1/register", {
+			data: { nickname },
+			headers: { Origin: baseURL },
+		});
+		assert.equal(response.status(), 201, await response.text());
+	}
+	await viewers[2].reload();
+	await expect(
+		viewers[2].getByRole("heading", { name: "あなたの発表はまだありません" }),
+	).toBeVisible();
 	await addTalk(admin, "自動化の第一歩", "発表者A", "5");
-	await addTalk(admin, "1秒の発表", "発表者B", "0:01");
+	await addTalk(admin, "1秒の発表", "発表者A", "0:01");
 	await admin
 		.getByRole("navigation", { name: "運営メニュー" })
 		.getByRole("link", { name: "コメント管理" })
@@ -250,7 +268,7 @@ try {
 		.getByRole("link", { name: "LT進行" })
 		.click();
 	await expect(admin.getByLabel("イベント名", { exact: true })).toHaveCount(0);
-	await addTalk(admin, "削除する発表", "発表者C", "3:30");
+	await addTalk(admin, "削除する発表", "発表者B", "3:30");
 	await admin
 		.getByRole("button", { name: "「削除する発表」を削除", exact: true })
 		.click();
@@ -298,6 +316,7 @@ try {
 		.click();
 	for (const page of [admin, ...viewers]) await status(page, "時間超過");
 	await admin.getByRole("button", { name: "発表を終了", exact: true }).click();
+
 	await viewerContext.setOffline(true);
 	await expect(
 		viewers[0].getByText("再接続中… 最後に取得した情報を表示しています", {
@@ -307,7 +326,7 @@ try {
 	await viewerContext.setOffline(false);
 	for (const page of viewers)
 		await expect(page.locator(".connection")).toHaveCount(0);
-	for (const page of viewers) {
+	for (const page of viewers.slice(0, 2)) {
 		await expect(page.getByRole("button")).toHaveCount(0);
 	}
 	for (const page of [admin, ...viewers]) {
@@ -366,13 +385,13 @@ try {
 	await participant
 		.getByRole("button", { name: "この名前で参加する →", exact: true })
 		.click();
-	await expect(
-		participant.getByRole("link", { name: "@merge_qa", exact: true }),
-	).toHaveAttribute("href", "https://x.com/merge_qa");
+	const profileLink = participant.getByRole("link", {
+		name: "統合確認の参加者さんのXプロフィール（新しいタブで開く）",
+		exact: true,
+	});
+	await expect(profileLink).toHaveAttribute("href", "https://x.com/merge_qa");
 	await participant.reload();
-	await expect(
-		participant.getByRole("link", { name: "@merge_qa", exact: true }),
-	).toBeVisible();
+	await expect(profileLink).toBeVisible();
 	await participant.goto("/");
 	await expect(
 		participant.getByRole("heading", { name: "LTを楽しもう", exact: true }),

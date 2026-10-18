@@ -18,12 +18,15 @@ class LiveError extends Error {
 }
 
 const nowSeconds = () => Math.floor(Date.now() / 1000);
+export const SHARE_TIMEOUT_SECONDS = 8;
 const noStore = { "Cache-Control": "no-store" };
 
-export async function readSnapshot() {
-	const [events, talks, states] = await env.DB.batch([
+export async function readSnapshot(organizer = false) {
+	const [events, talks, states, shares, participants] = await env.DB.batch<
+		Record<string, unknown>
+	>([
 		env.DB.prepare("SELECT id, name FROM events ORDER BY id LIMIT 1"),
-		env.DB.prepare(`SELECT t.id, t.title, p.nickname AS speaker, t.sort_order AS sortOrder,
+		env.DB.prepare(`SELECT t.id, t.title, p.nickname AS speaker, t.speaker_id AS speakerId, t.sort_order AS sortOrder,
 			t.duration_seconds AS durationSeconds, t.status, t.resumed_at AS resumedAt,
 			t.elapsed_seconds AS elapsedSeconds FROM talks t
 			JOIN participants p ON p.id = t.speaker_id AND p.event_id = t.event_id
@@ -31,21 +34,44 @@ export async function readSnapshot() {
 			ORDER BY t.sort_order, t.id`),
 		env.DB.prepare(`SELECT selected_talk_id AS selectedTalkId, revision FROM event_live_state
 			WHERE event_id = (SELECT id FROM events ORDER BY id LIMIT 1)`),
+		env.DB.prepare(`SELECT s.session_id AS sessionId, d.participant_id AS participantId,
+			s.started_at AS startedAt, s.heartbeat_at > ? AS live FROM screen_shares s
+			JOIN device_sessions d ON d.id = s.session_id AND d.participant_id IS NOT NULL
+			WHERE s.event_id = (SELECT id FROM events ORDER BY id LIMIT 1)
+			ORDER BY s.started_at DESC`).bind(nowSeconds() - SHARE_TIMEOUT_SECONDS),
+		// Registered participants are the ones signed in on some device.
+		env.DB.prepare(`SELECT id, nickname FROM participants p
+			WHERE event_id = (SELECT id FROM events ORDER BY id LIMIT 1) AND ?
+			AND EXISTS (SELECT 1 FROM device_sessions d WHERE d.participant_id = p.id AND d.expires_at > ?)
+			ORDER BY id`).bind(organizer ? 1 : 0, nowSeconds()),
 	]);
 	const state = z
-		.object({ selectedTalkId: z.number().nullable(), revision: z.string() })
-		.parse(states.results[0] ?? { selectedTalkId: null, revision: "0" });
+		.object({
+			selectedTalkId: z.number().nullable(),
+			revision: z.string(),
+		})
+		.parse(
+			states.results[0] ?? {
+				selectedTalkId: null,
+				revision: "0",
+			},
+		);
 	return liveSnapshotSchema.parse({
 		event: events.results[0] ?? null,
 		talks: talks.results,
 		selectedTalkId: state.selectedTalkId,
+		shares: shares.results.map((share) => ({
+			...share,
+			live: Boolean(share.live),
+		})),
+		participants: organizer ? participants.results : undefined,
 		revision: state.revision,
 		serverNow: Date.now() / 1000,
 	});
 }
 
 async function applyAction(action: LiveAction) {
-	const snapshot = await readSnapshot();
+	const snapshot = await readSnapshot(true);
 	if (action.action === "authorize") return snapshot;
 	if (action.action === "createEvent") {
 		if (snapshot.event) throw new LiveError("イベントは作成済みです。", 409);
@@ -58,7 +84,7 @@ async function applyAction(action: LiveAction) {
 				crypto.randomUUID(),
 			),
 		]);
-		return readSnapshot();
+		return readSnapshot(true);
 	}
 	if (!snapshot.event)
 		throw new LiveError("イベントを先に作成してください。", 409);
@@ -88,22 +114,15 @@ async function applyAction(action: LiveAction) {
 		if (action.id !== undefined && (!talk || talk.status !== "pending")) {
 			throw new LiveError("未開始の発表だけ編集できます。", 409);
 		}
+		if (!snapshot.participants?.some((item) => item.id === action.speakerId))
+			throw new LiveError("参加登録済みの発表者を選んでください。", 409);
 		if (talk) {
 			mutations.push(
 				statement(
-					`UPDATE participants SET nickname = ?, updated_at = ?
-				WHERE id = (SELECT speaker_id FROM talks WHERE id = ? AND event_id = ?) AND ${guard}`,
-					action.speaker,
-					now,
-					talk.id,
-					eventId,
-				),
-			);
-			mutations.push(
-				statement(
-					`UPDATE talks SET title = ?, duration_seconds = ?, updated_at = ?
+					`UPDATE talks SET title = ?, speaker_id = ?, duration_seconds = ?, updated_at = ?
 				WHERE id = ? AND event_id = ? AND ${guard}`,
 					action.title,
+					action.speakerId,
 					action.durationSeconds,
 					now,
 					talk.id,
@@ -113,19 +132,10 @@ async function applyAction(action: LiveAction) {
 		} else {
 			mutations.push(
 				statement(
-					`INSERT INTO participants (event_id, nickname)
-				SELECT ?, ? WHERE ${guard}`,
-					eventId,
-					action.speaker,
-				),
-			);
-			mutations.push(
-				statement(
 					`INSERT INTO talks (event_id, speaker_id, title, sort_order, duration_seconds)
-				SELECT ?, (SELECT id FROM participants WHERE event_id = ? ORDER BY id DESC LIMIT 1), ?, ?, ?
-				WHERE ${guard}`,
+				SELECT ?, ?, ?, ?, ? WHERE ${guard}`,
 					eventId,
-					eventId,
+					action.speakerId,
 					action.title,
 					Math.max(0, ...snapshot.talks.map((item) => item.sortOrder)) + 1,
 					action.durationSeconds,
@@ -147,11 +157,6 @@ async function applyAction(action: LiveAction) {
 		if (action.action === "deleteTalk") {
 			if (talk.status !== "pending")
 				throw new LiveError("未開始の発表だけ削除できます。", 409);
-			const speaker = await env.DB.prepare(
-				"SELECT speaker_id AS id FROM talks WHERE id = ?",
-			)
-				.bind(talk.id)
-				.first<{ id: number }>();
 			mutations.push(
 				statement(
 					`UPDATE event_live_state SET selected_talk_id = NULL
@@ -163,12 +168,6 @@ async function applyAction(action: LiveAction) {
 					`DELETE FROM talks WHERE id = ? AND event_id = ? AND ${guard}`,
 					talk.id,
 					eventId,
-				),
-				statement(
-					`DELETE FROM participants WHERE id = ?
-				AND NOT EXISTS (SELECT 1 FROM talks WHERE speaker_id = participants.id)
-				AND ${guard}`,
-					speaker?.id ?? null,
 				),
 			);
 		} else if (action.action === "move") {
@@ -316,12 +315,20 @@ async function applyAction(action: LiveAction) {
 			"別の操作が反映されました。最新の状態で再操作してください。",
 			409,
 		);
-	return readSnapshot();
+	return readSnapshot(true);
 }
 
-export async function getLive() {
+export async function getLive(request: Request) {
 	try {
-		return Response.json(await readSnapshot(), { headers: noStore });
+		return Response.json(
+			await readSnapshot(
+				isOrganizer(
+					request,
+					"ORGANIZER_KEY" in env ? env.ORGANIZER_KEY : undefined,
+				),
+			),
+			{ headers: noStore },
+		);
 	} catch (error) {
 		console.error("LT snapshot failed", error);
 		return Response.json(

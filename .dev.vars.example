@@ -1,3 +1,6 @@
 # Shared organizer key for LT controls and comment management.
 # Copy to .dev.vars and replace with your private key.
 ORGANIZER_KEY=replace-with-a-long-random-key
+# Optional: Cloudflare Realtime TURN key for screen sharing across networks
+TURN_KEY_ID=
+TURN_KEY_API_TOKEN=

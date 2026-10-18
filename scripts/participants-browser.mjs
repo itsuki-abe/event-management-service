@@ -122,7 +122,12 @@ try {
 	const page = await desktop.newPage();
 	const pageErrors = [];
 	page.on("pageerror", (error) => pageErrors.push(error.message));
-	await register(page, baseURL, "あおい", "@commons_aoi");
+	await register(
+		page,
+		baseURL,
+		"あおい",
+		"https://twitter.com/commons_aoi?s=21",
+	);
 	await page
 		.getByRole("link", { name: "参加者一覧で、今日の仲間を見つける →" })
 		.click();
@@ -157,6 +162,14 @@ try {
 		.getByRole("link", { name: "参加者", exact: true })
 		.click();
 	await expect(mobilePage.locator(".wc-person-card")).toHaveCount(2);
+	const participantNavigation = mobilePage.getByRole("navigation", {
+		name: "参加者メニュー",
+		exact: true,
+	});
+	await expect(participantNavigation.getByRole("link")).toHaveCount(5);
+	await expect(
+		participantNavigation.getByRole("link", { name: "参加者", exact: true }),
+	).toHaveAttribute("aria-current", "page");
 	await expect(
 		mobilePage.getByText("Xは未登録", { exact: true }),
 	).toBeVisible();
@@ -214,6 +227,7 @@ try {
 
 	const guest = await browser.newContext();
 	const guestPage = await guest.newPage();
+	guestPage.on("pageerror", (error) => pageErrors.push(error.message));
 	await guestPage.goto(`${baseURL}/events/1/participants`);
 	await expect(guestPage.getByRole("alert")).toContainText(
 		"先にスマホで参加登録",
