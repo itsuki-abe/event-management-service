@@ -340,6 +340,11 @@ export function ParticipationPage({
 					? "プロフィールを保存しました。"
 					: "参加登録が完了しました。",
 			);
+			if (!data?.participant && !code && !desktop) {
+				window.location.assign(
+					`/help?eventId=${encodeURIComponent(eventId)}&role=participant&welcome=1`,
+				);
+			}
 		});
 	}
 

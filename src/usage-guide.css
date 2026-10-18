@@ -1,0 +1,395 @@
+.ug-page {
+	overflow-wrap: anywhere;
+	max-width: 1080px;
+	margin: auto;
+}
+.ug-hero {
+	padding: 22px 0 32px;
+	text-align: center;
+}
+.ug-eyebrow {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	color: var(--blue);
+	font-size: 14px;
+	font-weight: 700;
+}
+.ug-hero h1 {
+	font-size: clamp(30px, 5vw, 42px);
+	margin: 12px 0;
+}
+.ug-hero > p {
+	color: var(--muted);
+}
+.ug-role-switch {
+	border: 0;
+	min-width: 0;
+	display: flex;
+	justify-content: center;
+	gap: 6px;
+	padding: 6px;
+	background: #eeeee8;
+	border-radius: 14px;
+	width: fit-content;
+	max-width: 100%;
+	margin: 26px auto 0;
+}
+.ug-role-switch button {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 13px 23px;
+	min-height: 48px;
+	border: 1px solid transparent;
+	border-radius: 10px;
+	background: transparent;
+	color: var(--muted);
+	font-weight: 700;
+}
+.ug-role-switch button[aria-pressed="true"] {
+	background: white;
+	border-color: var(--line);
+	color: var(--blue);
+	box-shadow: 0 2px 5px #202a3409;
+}
+.ug-start {
+	display: flex;
+	align-items: flex-start;
+	gap: 22px;
+	padding: 28px 32px;
+	background: var(--tint);
+	border: 1px solid #d6e0fc;
+	border-radius: 18px;
+	margin-bottom: 42px;
+}
+.ug-start-icon {
+	display: grid;
+	place-items: center;
+	flex-shrink: 0;
+	width: 62px;
+	height: 62px;
+	border-radius: 18px;
+	background: white;
+	color: var(--blue);
+}
+.ug-start > div:not(.ug-start-icon) {
+	min-width: 0;
+}
+.ug-start h2 {
+	font-size: 23px;
+	margin-bottom: 8px;
+}
+.ug-start p {
+	max-width: 730px;
+}
+.ug-start .wc-button {
+	margin-top: 18px;
+}
+.ug-welcome {
+	color: var(--green);
+	font-size: 14px;
+	font-weight: 700;
+	margin-bottom: 6px;
+}
+.ug-layout {
+	display: grid;
+	grid-template-columns: 228px minmax(0, 1fr);
+	gap: 38px;
+	align-items: start;
+}
+.ug-index {
+	position: sticky;
+	top: 180px;
+}
+.ug-index nav > p {
+	font-weight: 900;
+	font-size: 14px;
+	padding: 0 10px 12px;
+}
+.ug-index nav a {
+	display: flex;
+	align-items: baseline;
+	gap: 10px;
+	padding: 10px;
+	border-radius: 8px;
+	color: var(--ink);
+	font-size: 13px;
+	line-height: 1.7;
+}
+.ug-index nav a:hover {
+	background: var(--tint);
+	color: var(--blue);
+}
+.ug-index nav a span {
+	color: var(--blue);
+	font-size: 12px;
+}
+.ug-index > p {
+	margin: 20px 10px;
+	color: var(--muted);
+	font-size: 12px;
+}
+.ug-content {
+	min-width: 0;
+}
+.ug-section-heading {
+	margin-bottom: 20px;
+}
+.ug-section-heading h2 {
+	font-size: 24px;
+}
+.ug-section-heading p {
+	color: var(--muted);
+	font-size: 14px;
+	margin-top: 5px;
+}
+.ug-steps {
+	display: grid;
+	gap: 22px;
+}
+.ug-step {
+	padding: 28px;
+	background: white;
+	border: 1px solid var(--line);
+	border-radius: 16px;
+	scroll-margin-top: 180px;
+}
+.ug-step-heading {
+	display: flex;
+	align-items: flex-start;
+	gap: 14px;
+	margin-bottom: 22px;
+}
+.ug-step-number {
+	display: grid;
+	place-items: center;
+	flex-shrink: 0;
+	width: 38px;
+	height: 38px;
+	border-radius: 50%;
+	background: var(--tint);
+	color: var(--blue);
+	font-size: 14px;
+	font-weight: 900;
+}
+.ug-step h3 {
+	font-size: 19px;
+}
+.ug-step-heading p {
+	font-size: 14px;
+	color: var(--muted);
+	margin-top: 6px;
+}
+.ug-instructions {
+	display: grid;
+	gap: 14px;
+	list-style: none;
+	counter-reset: instruction;
+	margin: 0;
+	padding: 0;
+}
+.ug-instructions li {
+	counter-increment: instruction;
+	display: flex;
+	gap: 12px;
+	font-size: 15px;
+	line-height: 1.9;
+}
+.ug-instructions li::before {
+	content: counter(instruction);
+	display: grid;
+	place-items: center;
+	flex-shrink: 0;
+	width: 24px;
+	height: 24px;
+	margin-top: 3px;
+	background: var(--paper);
+	border: 1px solid var(--line);
+	border-radius: 6px;
+	font-size: 12px;
+	color: var(--muted);
+}
+.ug-result {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	margin-top: 22px;
+	color: var(--green);
+	font-size: 14px;
+}
+.ug-result svg {
+	flex-shrink: 0;
+	margin-top: 4px;
+}
+.ug-note {
+	background: var(--paper);
+	border-left: 3px solid var(--yellow);
+	padding: 10px 14px;
+	color: var(--muted);
+	font-size: 13px;
+	margin-top: 16px;
+}
+.ug-action {
+	margin-top: 20px;
+	max-width: 100%;
+}
+.ug-action.wc-button {
+	white-space: normal;
+	text-align: left;
+}
+.ug-questions {
+	margin-top: 44px;
+	scroll-margin-top: 180px;
+}
+.ug-questions details {
+	border-bottom: 1px solid var(--line);
+}
+.ug-questions summary {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 14px;
+	padding: 20px 4px;
+	list-style: none;
+	cursor: pointer;
+	font-size: 15px;
+	font-weight: 700;
+	line-height: 1.7;
+}
+.ug-questions summary::-webkit-details-marker {
+	display: none;
+}
+.ug-questions summary svg {
+	flex-shrink: 0;
+	color: var(--blue);
+}
+.ug-questions details[open] summary svg {
+	transform: rotate(180deg);
+}
+.ug-questions details p {
+	padding: 0 4px 20px;
+	color: var(--muted);
+	font-size: 14px;
+}
+.ug-finish {
+	text-align: center;
+	padding: 38px 14px 8px;
+}
+.ug-finish > svg {
+	color: var(--green);
+}
+.ug-finish h2 {
+	font-size: 20px;
+	margin: 12px 0 8px;
+}
+.ug-finish p {
+	font-size: 14px;
+	color: var(--muted);
+}
+.ug-finish .wc-button {
+	margin-top: 20px;
+}
+.ug-state {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 18px;
+	max-width: 680px;
+	margin: 20px auto 50px;
+	padding: 36px;
+	background: white;
+	border: 1px solid var(--line);
+	border-radius: 16px;
+	text-align: center;
+}
+.ug-state h2 {
+	font-size: 22px;
+}
+.ug-state p {
+	color: var(--muted);
+}
+.ug-sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+@media (max-width: 900px) {
+	.ug-layout {
+		grid-template-columns: 1fr;
+		gap: 28px;
+	}
+	.ug-index {
+		position: static;
+		border: 1px solid var(--line);
+		border-radius: 14px;
+		padding: 18px;
+	}
+	.ug-index nav {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+	.ug-index nav > p {
+		grid-column: 1 / -1;
+	}
+	.ug-index > p {
+		margin-bottom: 0;
+	}
+}
+@media (max-width: 520px) {
+	.ug-hero {
+		padding-top: 8px;
+	}
+	.ug-hero > p {
+		font-size: 14px;
+	}
+	.ug-role-switch {
+		width: 100%;
+	}
+	.ug-role-switch button {
+		flex: 1;
+		padding: 10px 5px;
+		font-size: 13px;
+		gap: 5px;
+	}
+	.ug-start {
+		padding: 22px;
+		gap: 14px;
+		flex-direction: column;
+		margin-bottom: 26px;
+	}
+	.ug-start-icon {
+		width: 44px;
+		height: 44px;
+		border-radius: 12px;
+	}
+	.ug-start h2 {
+		font-size: 20px;
+	}
+	.ug-start p {
+		font-size: 14px;
+	}
+	.ug-index nav {
+		grid-template-columns: 1fr;
+	}
+	.ug-step {
+		padding: 22px 18px;
+	}
+	.ug-step-heading {
+		gap: 10px;
+	}
+	.ug-step h3 {
+		font-size: 18px;
+	}
+	.ug-instructions li {
+		font-size: 14px;
+		gap: 10px;
+	}
+	.ug-state {
+		padding: 26px 18px;
+	}
+}

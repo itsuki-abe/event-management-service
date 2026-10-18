@@ -1,0 +1,252 @@
+.ug-share-guide {
+	margin-top: 40px;
+	scroll-margin-top: 180px;
+	overflow-wrap: anywhere;
+}
+.ug-share-heading h2 {
+	font-size: 24px;
+}
+.ug-share-heading > p {
+	margin-top: 8px;
+	color: var(--muted);
+	font-size: 14px;
+}
+.ug-share-flow {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 10px;
+	padding: 0;
+	margin: 22px 0;
+	list-style: none;
+}
+.ug-share-flow li {
+	min-width: 0;
+	padding: 16px;
+	border: 1px solid #d6e0fc;
+	border-radius: 12px;
+	background: var(--tint);
+}
+.ug-share-flow-top {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	color: var(--blue);
+	margin-bottom: 12px;
+}
+.ug-share-flow-top span {
+	display: grid;
+	place-items: center;
+	width: 25px;
+	height: 25px;
+	border-radius: 50%;
+	background: white;
+	font-size: 13px;
+	font-weight: 900;
+}
+.ug-share-flow small {
+	display: block;
+	color: var(--muted);
+	font-size: 11px;
+}
+.ug-share-flow strong {
+	display: block;
+	margin: 5px 0;
+	font-size: 15px;
+}
+.ug-share-flow p {
+	color: var(--muted);
+	font-size: 12px;
+}
+.ug-share-prerequisites {
+	padding: 22px;
+	border: 1px solid var(--line);
+	border-radius: 14px;
+	background: var(--paper);
+}
+.ug-share-prerequisites h3,
+.ug-share-stop h3 {
+	font-size: 17px;
+}
+.ug-share-prerequisites ul {
+	padding-left: 22px;
+	margin: 14px 0 0;
+	display: grid;
+	gap: 9px;
+	font-size: 14px;
+	line-height: 1.9;
+}
+.ug-share-instructions {
+	margin-top: 22px;
+	padding: 26px;
+	border: 1px solid var(--line);
+	border-radius: 14px;
+	background: white;
+}
+.ug-share-actor > span {
+	display: inline-block;
+	padding: 4px 9px;
+	margin-bottom: 10px;
+	background: var(--tint);
+	color: var(--blue);
+	border-radius: 6px;
+	font-size: 12px;
+	font-weight: 700;
+}
+.ug-share-actor h3 {
+	font-size: 19px;
+}
+.ug-share-instructions > ol {
+	padding-left: 25px;
+	margin: 22px 0 0;
+	display: grid;
+	gap: 20px;
+	line-height: 1.9;
+}
+.ug-share-instructions > ol > li {
+	padding-left: 4px;
+	font-size: 15px;
+}
+.ug-share-instructions > ol > li::marker {
+	color: var(--blue);
+	font-weight: 900;
+}
+.ug-share-instructions li > p {
+	font-size: 14px;
+	color: var(--muted);
+	margin-top: 6px;
+}
+.ug-share-choices {
+	display: grid;
+	gap: 12px;
+	margin: 16px 0;
+	padding: 16px;
+	border: 1px solid var(--line);
+	border-radius: 10px;
+	background: var(--paper);
+}
+.ug-share-choices dt {
+	font-size: 13px;
+	font-weight: 900;
+}
+.ug-share-choices dd {
+	font-size: 13px;
+	margin: 3px 0 0;
+	color: var(--muted);
+}
+.ug-share-tip {
+	font-size: 13px;
+	padding: 12px 14px;
+	margin-top: 18px;
+	border-left: 3px solid var(--yellow);
+	background: var(--paper);
+	color: var(--muted);
+}
+.ug-share-link.wc-button {
+	min-height: 44px;
+	max-width: 100%;
+	white-space: normal;
+	text-align: left;
+	margin-top: 22px;
+}
+.ug-share-links {
+	display: flex;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+.ug-share-operator .ug-share-actor > span {
+	color: var(--green);
+	background: #edf6ef;
+}
+.ug-share-stop {
+	padding: 22px;
+	margin-top: 22px;
+	background: #fff4e8;
+	border: 1px solid #edd9c6;
+	border-radius: 14px;
+}
+.ug-share-stop p {
+	font-size: 14px;
+	margin-top: 10px;
+}
+.ug-share-troubles {
+	margin-top: 20px;
+}
+.ug-share-troubles details {
+	border-bottom: 1px solid var(--line);
+}
+.ug-share-troubles summary {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 14px;
+	list-style: none;
+	cursor: pointer;
+	min-height: 44px;
+	padding: 18px 4px;
+	font-size: 14px;
+	line-height: 1.8;
+	font-weight: 700;
+}
+.ug-share-troubles summary::-webkit-details-marker {
+	display: none;
+}
+.ug-share-troubles summary svg {
+	color: var(--blue);
+	flex-shrink: 0;
+}
+.ug-share-troubles details[open] summary svg {
+	transform: rotate(180deg);
+}
+.ug-share-troubles details > p {
+	padding: 0 4px 20px;
+	font-size: 14px;
+	color: var(--muted);
+}
+.ug-share-sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+@media (max-width: 520px) {
+	.ug-share-flow {
+		grid-template-columns: 1fr;
+	}
+	.ug-share-flow li {
+		position: relative;
+		padding-left: 58px;
+	}
+	.ug-share-flow-top {
+		position: absolute;
+		top: 16px;
+		left: 16px;
+		display: grid;
+		gap: 12px;
+	}
+	.ug-share-flow strong {
+		font-size: 16px;
+	}
+	.ug-share-prerequisites,
+	.ug-share-instructions,
+	.ug-share-stop {
+		padding: 22px 18px;
+	}
+	.ug-share-actor h3 {
+		font-size: 18px;
+	}
+	.ug-share-instructions > ol {
+		padding-left: 22px;
+	}
+	.ug-share-instructions > ol > li {
+		padding-left: 2px;
+		font-size: 14px;
+	}
+	.ug-share-choices {
+		padding: 12px;
+	}
+	.ug-share-link.wc-button {
+		width: 100%;
+	}
+}

@@ -16,7 +16,7 @@ const login = await fetch(
 	new URL(`/api/login?key=${encodeURIComponent(token)}`, baseUrl),
 	{ redirect: "manual" },
 );
-assert.equal(login.headers.get("location"), "/admin");
+assert.equal(login.headers.get("location"), "/help?role=organizer");
 const organizerCookie = login.headers.get("set-cookie")?.split(";")[0];
 assert.ok(organizerCookie, "Organizer login must set a session cookie.");
 let cookie = "";

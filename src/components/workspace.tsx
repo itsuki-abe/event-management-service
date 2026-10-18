@@ -1,4 +1,5 @@
 import {
+	BookOpen,
 	ContactRound,
 	Home,
 	Laptop,
@@ -12,6 +13,7 @@ import {
 
 export type WorkspaceSection =
 	| "dashboard"
+	| "help"
 	| "registration"
 	| "connect"
 	| "live"
@@ -124,6 +126,19 @@ export function WorkspaceShell({
 							<span className="wc-event-name">{name}</span>
 							<a
 								className="wc-icon-link"
+								href={
+									name
+										? `/help?eventId=${encodeURIComponent(eventId)}`
+										: "/help"
+								}
+								aria-label="使い方ガイド"
+								title="使い方"
+							>
+								<BookOpen size={22} aria-hidden="true" />
+								<small>使い方</small>
+							</a>
+							<a
+								className="wc-icon-link"
 								href={`${eventPath}/connect`}
 								aria-label="PC／Macを接続"
 								title="PC／Macを接続"
@@ -167,6 +182,15 @@ export function WorkspaceShell({
 					<footer className="wc-footer">
 						<span>WORKSHOP COMMONS</span>
 						<div>
+							<a
+								href={
+									name
+										? `/help?eventId=${encodeURIComponent(eventId)}`
+										: "/help"
+								}
+							>
+								使い方
+							</a>
 							<a href={`${eventPath}/qr`}>
 								<QrCode size={15} aria-hidden="true" />
 								参加QR

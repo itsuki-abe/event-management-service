@@ -20,7 +20,7 @@ assert.equal(rejected.status, 303);
 assert.equal(rejected.headers.get("Set-Cookie"), null);
 loginUrl.searchParams.set("key", organizerKey);
 const accepted = await fetch(loginUrl, { redirect: "manual" });
-assert.equal(accepted.headers.get("Location"), "/admin");
+assert.equal(accepted.headers.get("Location"), "/help?role=organizer");
 const cookie = accepted.headers.get("Set-Cookie")?.split(";")[0];
 assert.ok(cookie, "Organizer link must set a session cookie.");
 

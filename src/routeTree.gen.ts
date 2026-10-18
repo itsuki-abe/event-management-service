@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as HelpRouteImport } from './routes/help'
 import { Route as LiveRouteImport } from './routes/live'
 import { Route as ScreenRouteImport } from './routes/screen'
 import { Route as SpeakerRouteImport } from './routes/speaker'
@@ -19,6 +20,7 @@ import { Route as AdminGuideRouteImport } from './routes/admin_.guide'
 import { Route as ApiEngagementRouteImport } from './routes/api.engagement'
 import { Route as ApiEventsRouteImport } from './routes/api.events'
 import { Route as ApiHealthRouteImport } from './routes/api.health'
+import { Route as ApiHelpRouteImport } from './routes/api.help'
 import { Route as ApiLoginRouteImport } from './routes/api.login'
 import { Route as ApiLtRouteImport } from './routes/api.lt'
 import { Route as ApiShareRouteImport } from './routes/api.share'
@@ -37,6 +39,11 @@ const IndexRoute = IndexRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HelpRoute = HelpRouteImport.update({
+  id: '/help',
+  path: '/help',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LiveRoute = LiveRouteImport.update({
@@ -77,6 +84,11 @@ const ApiEventsRoute = ApiEventsRouteImport.update({
 const ApiHealthRoute = ApiHealthRouteImport.update({
   id: '/api/health',
   path: '/api/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiHelpRoute = ApiHelpRouteImport.update({
+  id: '/api/help',
+  path: '/api/help',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiLoginRoute = ApiLoginRouteImport.update({
@@ -129,6 +141,7 @@ const ApiEventsEventIdSplatRoute = ApiEventsEventIdSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/help': typeof HelpRoute
   '/live': typeof LiveRoute
   '/screen': typeof ScreenRoute
   '/speaker': typeof SpeakerRoute
@@ -137,6 +150,7 @@ export interface FileRoutesByFullPath {
   '/api/engagement': typeof ApiEngagementRoute
   '/api/events': typeof ApiEventsRouteWithChildren
   '/api/health': typeof ApiHealthRoute
+  '/api/help': typeof ApiHelpRoute
   '/api/login': typeof ApiLoginRoute
   '/api/lt': typeof ApiLtRoute
   '/api/share': typeof ApiShareRoute
@@ -150,6 +164,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/help': typeof HelpRoute
   '/live': typeof LiveRoute
   '/screen': typeof ScreenRoute
   '/speaker': typeof SpeakerRoute
@@ -158,6 +173,7 @@ export interface FileRoutesByTo {
   '/api/engagement': typeof ApiEngagementRoute
   '/api/events': typeof ApiEventsRouteWithChildren
   '/api/health': typeof ApiHealthRoute
+  '/api/help': typeof ApiHelpRoute
   '/api/login': typeof ApiLoginRoute
   '/api/lt': typeof ApiLtRoute
   '/api/share': typeof ApiShareRoute
@@ -172,6 +188,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/help': typeof HelpRoute
   '/live': typeof LiveRoute
   '/screen': typeof ScreenRoute
   '/speaker': typeof SpeakerRoute
@@ -180,6 +197,7 @@ export interface FileRoutesById {
   '/api/engagement': typeof ApiEngagementRoute
   '/api/events': typeof ApiEventsRouteWithChildren
   '/api/health': typeof ApiHealthRoute
+  '/api/help': typeof ApiHelpRoute
   '/api/login': typeof ApiLoginRoute
   '/api/lt': typeof ApiLtRoute
   '/api/share': typeof ApiShareRoute
@@ -195,6 +213,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/help'
     | '/live'
     | '/screen'
     | '/speaker'
@@ -203,6 +222,7 @@ export interface FileRouteTypes {
     | '/api/engagement'
     | '/api/events'
     | '/api/health'
+    | '/api/help'
     | '/api/login'
     | '/api/lt'
     | '/api/share'
@@ -216,6 +236,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
+    | '/help'
     | '/live'
     | '/screen'
     | '/speaker'
@@ -224,6 +245,7 @@ export interface FileRouteTypes {
     | '/api/engagement'
     | '/api/events'
     | '/api/health'
+    | '/api/help'
     | '/api/login'
     | '/api/lt'
     | '/api/share'
@@ -237,6 +259,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/help'
     | '/live'
     | '/screen'
     | '/speaker'
@@ -245,6 +268,7 @@ export interface FileRouteTypes {
     | '/api/engagement'
     | '/api/events'
     | '/api/health'
+    | '/api/help'
     | '/api/login'
     | '/api/lt'
     | '/api/share'
@@ -259,6 +283,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  HelpRoute: typeof HelpRoute
   LiveRoute: typeof LiveRoute
   ScreenRoute: typeof ScreenRoute
   SpeakerRoute: typeof SpeakerRoute
@@ -267,6 +292,7 @@ export interface RootRouteChildren {
   ApiEngagementRoute: typeof ApiEngagementRoute
   ApiEventsRoute: typeof ApiEventsRouteWithChildren
   ApiHealthRoute: typeof ApiHealthRoute
+  ApiHelpRoute: typeof ApiHelpRoute
   ApiLoginRoute: typeof ApiLoginRoute
   ApiLtRoute: typeof ApiLtRoute
   ApiShareRoute: typeof ApiShareRoute
@@ -291,6 +317,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/help': {
+      id: '/help'
+      path: '/help'
+      fullPath: '/help'
+      preLoaderRoute: typeof HelpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/live': {
@@ -347,6 +380,13 @@ declare module '@tanstack/react-router' {
       path: '/api/health'
       fullPath: '/api/health'
       preLoaderRoute: typeof ApiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/help': {
+      id: '/api/help'
+      path: '/api/help'
+      fullPath: '/api/help'
+      preLoaderRoute: typeof ApiHelpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/login': {
@@ -430,6 +470,7 @@ const ApiEventsRouteWithChildren = ApiEventsRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  HelpRoute: HelpRoute,
   LiveRoute: LiveRoute,
   ScreenRoute: ScreenRoute,
   SpeakerRoute: SpeakerRoute,
@@ -438,6 +479,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiEngagementRoute: ApiEngagementRoute,
   ApiEventsRoute: ApiEventsRouteWithChildren,
   ApiHealthRoute: ApiHealthRoute,
+  ApiHelpRoute: ApiHelpRoute,
   ApiLoginRoute: ApiLoginRoute,
   ApiLtRoute: ApiLtRoute,
   ApiShareRoute: ApiShareRoute,
@@ -450,3 +492,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
