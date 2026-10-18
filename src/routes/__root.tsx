@@ -12,14 +12,15 @@ export const Route = createRootRoute({
 				name: "viewport",
 				content: "width=device-width, initial-scale=1",
 			},
+			{ name: "referrer", content: "no-referrer" },
 			{
-				title: "LTライブ",
+				title: "Workshop Commons",
 			},
 		],
 		links: [
 			{
 				rel: "stylesheet",
-				href: "https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap",
+				href: "https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap",
 			},
 			{
 				rel: "stylesheet",

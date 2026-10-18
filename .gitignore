@@ -9,3 +9,5 @@ dist/
 !.env.example
 *.local
 .DS_Store
+output/playwright/
+.playwright-cli/

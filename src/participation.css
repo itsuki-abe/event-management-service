@@ -1,0 +1,420 @@
+.participation {
+	max-width: 1080px;
+	margin: 0 auto;
+}
+.participation .event-content {
+	max-width: 720px;
+	margin: 0 auto 25px;
+}
+.participation .eyebrow {
+	color: var(--blue);
+	font-size: 13px;
+	font-weight: 700;
+	letter-spacing: 0.07em;
+	margin: 0 0 8px;
+}
+.participation .event-name {
+	color: var(--muted);
+	font-size: 14px;
+	margin: 0 0 26px;
+	overflow-wrap: anywhere;
+}
+.participation h1 {
+	font-size: 32px;
+	font-weight: 900;
+	line-height: 1.4;
+	margin: 0 0 16px;
+	overflow-wrap: anywhere;
+}
+.participation h2 {
+	font-size: 23px;
+	line-height: 1.45;
+	margin: 0;
+}
+.participation p {
+	line-height: 1.75;
+}
+.participation .step-label {
+	display: block;
+	font-size: 12px;
+	font-weight: 700;
+	color: var(--muted);
+	letter-spacing: 0.07em;
+	margin-bottom: 14px;
+}
+.participation .lead {
+	color: var(--muted);
+	font-size: 16px;
+	margin: 0 0 26px;
+}
+.participation .card {
+	border: 0;
+	border-top: 4px solid var(--blue);
+	background: white;
+	padding: 28px;
+	margin: 0 0 24px;
+	min-width: 0;
+}
+.participation .centered {
+	text-align: center;
+}
+.participation .stack {
+	display: flex;
+	flex-direction: column;
+	gap: 22px;
+}
+.participation label {
+	display: block;
+	font-size: 14px;
+	font-weight: 700;
+}
+.participation input,
+.participation textarea {
+	display: block;
+	width: 100%;
+	border: 1px solid #b8c0c8;
+	border-radius: 7px;
+	padding: 11px 12px;
+	margin-top: 8px;
+	font-size: 16px;
+	color: var(--ink);
+	background: white;
+	line-height: 1.6;
+}
+.participation input:focus,
+.participation textarea:focus {
+	outline: 2px solid var(--blue);
+	border-color: transparent;
+}
+.participation textarea {
+	resize: vertical;
+}
+.participation input::placeholder,
+.participation textarea::placeholder {
+	color: #7c858d;
+	font-weight: 400;
+}
+.participation button,
+.participation .button {
+	min-height: 48px;
+	border: 0;
+	border-radius: 9px;
+	padding: 12px 20px;
+	background: var(--blue);
+	color: white;
+	font-weight: 700;
+	font-size: 16px;
+	line-height: 1.45;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	cursor: pointer;
+}
+.participation button:hover:not(:disabled) {
+	filter: brightness(0.97);
+}
+.participation button.secondary {
+	background: transparent;
+	border: 1.5px solid var(--blue);
+	color: var(--blue);
+}
+.participation .text-button {
+	color: var(--blue);
+	background: none;
+	border: 0;
+	padding: 8px 0;
+	min-height: 44px;
+	font-size: 14px;
+	white-space: nowrap;
+}
+.participation .text-button.danger {
+	color: var(--red);
+}
+.participation .required,
+.participation .optional {
+	display: inline-block;
+	font-size: 11px;
+	font-weight: 700;
+	padding: 2px 6px;
+	margin-left: 7px;
+	border-radius: 4px;
+	background: var(--tint);
+	color: var(--blue);
+}
+.participation .optional {
+	background: #f1f1ed;
+	color: var(--muted);
+}
+.participation .field-note {
+	display: block;
+	font-size: 13px;
+	font-weight: 400;
+	margin-top: 8px;
+	color: var(--muted);
+	line-height: 1.6;
+}
+.participation .privacy-note {
+	color: var(--muted);
+	font-size: 12px;
+	text-align: center;
+	margin: 22px 0 0;
+}
+.participation .back-link {
+	display: block;
+	min-height: 44px;
+	font-size: 14px;
+	text-align: center;
+	margin: 18px 0;
+	text-decoration: underline;
+	text-underline-offset: 4px;
+}
+.participation .button-row {
+	display: flex;
+	gap: 12px;
+	flex-wrap: wrap;
+	margin-top: 20px;
+}
+.participation .button-row > * {
+	flex: 1;
+}
+.participation .notice {
+	padding: 14px;
+	margin: 20px 0;
+	border-radius: 6px;
+	background: #ffe8d8;
+	font-size: 14px;
+	line-height: 1.7;
+}
+.participation .alert {
+	padding: 14px;
+	margin: 0 0 24px;
+	border-radius: 6px;
+	background: #ffe7e1;
+	color: var(--red);
+	font-size: 14px;
+}
+.participation .alert p {
+	margin: 0;
+}
+.participation .success-message {
+	display: block;
+	padding: 14px;
+	margin: 0 0 24px;
+	border-radius: 6px;
+	background: #e7f3e9;
+	color: var(--green);
+	font-size: 14px;
+}
+.participation .section-heading {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 22px;
+}
+.participation .section-heading h2 {
+	flex: 1;
+}
+.participation .number-badge {
+	display: grid;
+	place-items: center;
+	width: 34px;
+	height: 34px;
+	flex-shrink: 0;
+	border-radius: 50%;
+	color: var(--blue);
+	background: var(--tint);
+	font-size: 13px;
+	font-weight: 900;
+}
+.participation .instructions {
+	list-style: decimal;
+	padding-left: 22px;
+	margin: 0;
+	font-size: 14px;
+	line-height: 1.8;
+}
+.participation .instructions li {
+	padding-left: 3px;
+	margin: 14px 0;
+}
+.participation .copy-field {
+	display: flex;
+	gap: 8px;
+	margin-top: 10px;
+}
+.participation .copy-field input {
+	min-width: 0;
+	margin: 0;
+	font-size: 13px;
+	padding: 10px;
+}
+.participation .copy-field button {
+	padding: 10px 12px;
+	flex-shrink: 0;
+	font-size: 13px;
+}
+.participation .code-entry {
+	border-top: 1px solid var(--line);
+	padding-top: 24px;
+	margin-top: 24px;
+	gap: 14px;
+}
+.participation .code-entry input {
+	font-family: ui-monospace, monospace;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+}
+.participation .status-chip {
+	display: inline-flex;
+	align-items: center;
+	min-height: 26px;
+	padding: 3px 9px;
+	border-radius: 5px;
+	background: #ffe6d8;
+	color: #7a3b1c;
+	font-size: 13px;
+	font-weight: 700;
+	margin-bottom: 20px;
+}
+.participation .qr-paper {
+	padding: 12px;
+	border: 1px solid var(--line);
+	border-radius: 9px;
+	background: white;
+	width: fit-content;
+	max-width: 100%;
+	margin: 4px auto 16px;
+}
+.participation .qr-paper svg {
+	display: block;
+	max-width: 100%;
+	height: auto;
+}
+.participation .expiry {
+	font-size: 14px;
+	font-weight: 700;
+	color: var(--blue);
+	font-variant-numeric: tabular-nums;
+	margin: 18px 0;
+}
+.participation .pairing-code {
+	display: block;
+	font-family: ui-monospace, monospace;
+	font-size: clamp(15px, 3vw, 23px);
+	font-weight: 700;
+	color: var(--ink);
+	margin: 20px 0;
+	letter-spacing: 0.04em;
+	overflow-wrap: anywhere;
+}
+.participation .muted {
+	color: var(--muted);
+	font-size: 13px;
+}
+.participation .caption {
+	color: var(--muted);
+	font-size: 13px;
+	text-align: center;
+	margin: 18px 0;
+}
+.participation .device-illustration {
+	color: var(--blue);
+	font-size: 90px;
+	line-height: 1;
+	margin: 18px auto;
+}
+.participation .profile-name {
+	font-size: 23px;
+	font-weight: 900;
+	margin: 0 0 12px;
+	overflow-wrap: anywhere;
+}
+.participation .profile-body {
+	color: var(--muted);
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+	margin: 0;
+}
+.participation .count {
+	font-size: 13px;
+	color: var(--muted);
+}
+.participation .device-list {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+.participation .device-list li {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	border-top: 1px solid var(--line);
+	padding: 12px 0;
+	font-size: 14px;
+}
+.participation .device-list li:first-child {
+	border-top: 0;
+}
+.participation .venue-poster {
+	text-align: center;
+}
+.participation .poster-url {
+	font-size: 14px;
+	overflow-wrap: anywhere;
+	margin: 18px 0;
+}
+@media (min-width: 1000px) {
+	.participation.is-registered .event-content {
+		max-width: 1080px;
+		display: grid;
+		grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+		gap: 0 28px;
+	}
+	.participation.is-registered .event-content > :not(section) {
+		grid-column: 1 / -1;
+	}
+	.participation.is-registered .card:has(.code-entry),
+	.participation.is-registered .confirmation {
+		grid-row: span 2;
+	}
+}
+@media (max-width: 760px) {
+	.participation .event-content {
+		max-width: 480px;
+	}
+	.participation h1 {
+		font-size: 27px;
+	}
+	.participation h2 {
+		font-size: 21px;
+	}
+	.participation .lead {
+		font-size: 14px;
+	}
+	.participation .card {
+		padding: 22px 20px;
+	}
+	.participation .section-heading {
+		gap: 10px;
+	}
+	.participation .section-heading h2 {
+		font-size: 20px;
+	}
+	.participation .device-list li > div {
+		flex: 1;
+	}
+	.participation .device-list .muted {
+		display: block;
+	}
+	.participation .privacy-note {
+		font-size: 12px;
+	}
+}
+@media print {
+	.participation .no-print {
+		display: none;
+	}
+}
