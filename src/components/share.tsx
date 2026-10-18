@@ -3,10 +3,6 @@ import type { LiveSnapshot, ShareAction } from "../lib/lt";
 
 type Share = LiveSnapshot["shares"][number];
 
-// STUN only, so presenter and projector PCs must reach each other
-// directly (same venue LAN works). Add a TURN server here if the venue
-// network isolates clients.
-const iceServers = [{ urls: "stun:stun.cloudflare.com:3478" }];
 const sleep = (ms: number) => new Promise((done) => setTimeout(done, ms));
 
 async function shareApi<T>(action: ShareAction): Promise<T> {
@@ -21,6 +17,16 @@ async function shareApi<T>(action: ShareAction): Promise<T> {
 			status: response.status,
 		});
 	return body;
+}
+
+// Fetched once per page; the server adds TURN relays when configured.
+let iceConfig: Promise<RTCConfiguration> | undefined;
+function rtcConfig() {
+	iceConfig ??= shareApi<RTCConfiguration>({ action: "ice" }).catch(() => {
+		iceConfig = undefined;
+		return { iceServers: [{ urls: "stun:stun.cloudflare.com:3478" }] };
+	});
+	return iceConfig;
 }
 
 // SDP is sent once with every candidate, so signaling needs no trickle ICE.
@@ -105,8 +111,12 @@ export function useSharePublisher(eventId: number | undefined) {
 		const peers = new Map<string, RTCPeerConnection>();
 		let alive = true;
 		let timer: ReturnType<typeof setTimeout>;
-		const answer = async (id: string, sdp: string) => {
-			const peer = new RTCPeerConnection({ iceServers });
+		const answer = async (
+			id: string,
+			sdp: string,
+			config: RTCConfiguration,
+		) => {
+			const peer = new RTCPeerConnection(config);
 			peers.set(id, peer);
 			peer.addEventListener("connectionstatechange", () => {
 				if (["failed", "closed"].includes(peer.connectionState)) {
@@ -127,12 +137,13 @@ export function useSharePublisher(eventId: number | undefined) {
 		};
 		const poll = async () => {
 			try {
+				const config = await rtcConfig();
 				const { offers } = await shareApi<{
 					offers: { id: string; sdp: string }[];
 				}>({ action: "poll" });
 				for (const offer of offers)
 					if (!peers.has(offer.id))
-						void answer(offer.id, offer.sdp).catch(() =>
+						void answer(offer.id, offer.sdp, config).catch(() =>
 							peers.delete(offer.id),
 						);
 			} catch (cause) {
@@ -178,7 +189,8 @@ export function useShareViewer(share: Share | undefined) {
 		};
 		async function connect() {
 			current?.close();
-			const peer = new RTCPeerConnection({ iceServers });
+			const peer = new RTCPeerConnection(await rtcConfig());
+			if (!alive) return peer.close();
 			current = peer;
 			peer.addTransceiver("video", { direction: "recvonly" });
 			peer.addEventListener("track", (event) => {

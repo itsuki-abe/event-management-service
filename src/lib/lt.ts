@@ -75,6 +75,7 @@ export const liveActionSchema = z.discriminatedUnion("action", [
 const sdp = z.string().min(1).max(20000);
 export const shareActionSchema = z.discriminatedUnion("action", [
 	z.object({ action: z.literal("status") }),
+	z.object({ action: z.literal("ice") }),
 	z.object({ action: z.literal("prepare") }),
 	z.object({ action: z.literal("poll") }),
 	z.object({ action: z.literal("answer"), id: z.uuid(), sdp }),

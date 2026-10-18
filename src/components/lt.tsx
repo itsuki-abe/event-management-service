@@ -697,6 +697,17 @@ function AdminView({
 			...extra,
 		} as LiveAction);
 	const live = current?.status === "running" || current?.status === "paused";
+	// Keep offering the current speaker's share until it is on the venue screen.
+	const currentShare = data?.shares.find(
+		(share) => share.participantId === current?.speakerId && share.live,
+	);
+	const sourceTalk =
+		current?.status === "pending" ||
+		(live &&
+			currentShare &&
+			currentShare.sessionId !== data?.projectedSessionId)
+			? current
+			: next;
 
 	return (
 		<>
@@ -968,8 +979,8 @@ function AdminView({
 
 					<ShareSource
 						data={data}
-						talk={current?.status === "pending" ? current : next}
-						standby={current?.status === "pending"}
+						talk={sourceTalk}
+						standby={sourceTalk === current}
 						disabled={disabled}
 						run={run}
 					/>

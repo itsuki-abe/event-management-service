@@ -13,6 +13,43 @@ const noStore = { "Cache-Control": "no-store" };
 const fail = (error: string, status: number) =>
 	Response.json({ error }, { status, headers: noStore });
 
+const stun = [{ urls: ["stun:stun.cloudflare.com:3478"] }];
+
+// Cloudflare Realtime TURN relays media when the two PCs cannot connect
+// directly. Without TURN_KEY_ID / TURN_KEY_API_TOKEN, only STUN is used.
+async function iceServers() {
+	const id = "TURN_KEY_ID" in env ? env.TURN_KEY_ID : undefined;
+	const token =
+		"TURN_KEY_API_TOKEN" in env ? env.TURN_KEY_API_TOKEN : undefined;
+	if (typeof id !== "string" || !id || typeof token !== "string" || !token)
+		return stun;
+	try {
+		const response = await fetch(
+			`https://rtc.live.cloudflare.com/v1/turn/keys/${id}/credentials/generate-ice-servers`,
+			{
+				method: "POST",
+				headers: {
+					Authorization: `Bearer ${token}`,
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ ttl: 86400 }),
+			},
+		);
+		if (!response.ok) throw new Error(String(response.status));
+		const { iceServers } = (await response.json()) as {
+			iceServers: { urls: string[]; username?: string; credential?: string }[];
+		};
+		// Browsers block port 53, and without trickle ICE it only adds a timeout.
+		return iceServers.map((server) => ({
+			...server,
+			urls: server.urls.filter((url) => !/:53(\?|$)/.test(url)),
+		}));
+	} catch (error) {
+		console.error("TURN credentials failed", error);
+		return stun;
+	}
+}
+
 export async function postShare(request: Request) {
 	if (!request.headers.get("Content-Type")?.startsWith("application/json"))
 		return fail("入力形式を確認してください。", 400);
@@ -36,6 +73,7 @@ export async function postShare(request: Request) {
 	const headers = new Headers(noStore);
 	const json = (data: unknown) => Response.json(data, { headers });
 
+	if (action.action === "ice") return json({ iceServers: await iceServers() });
 	if (action.action === "offer" || action.action === "receive") {
 		if (action.action === "receive") {
 			const row = await env.DB.prepare(
