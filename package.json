@@ -22,8 +22,10 @@
 		"test:smoke": "node scripts/smoke.mjs",
 		"test:lt": "node scripts/lt-smoke.mjs",
 		"test:browser": "bun run build && node scripts/lt-browser.mjs",
-		"test": "bun test",
-		"db:seed": "wrangler d1 execute DB --local --file scripts/seed-local.sql"
+		"db:seed": "wrangler d1 execute DB --local --file scripts/seed-local.sql",
+		"test:engagement": "node scripts/engagement-smoke.mjs",
+		"db:seed:engagement": "wrangler d1 execute DB --local --file scripts/seed-engagement.sql",
+		"test": "bun test"
 	},
 	"dependencies": {
 		"@tanstack/react-router": "1.170.45",
@@ -32,6 +34,8 @@
 		"react": "^19.2.0",
 		"react-dom": "^19.2.0",
 		"zod": "^4.6.7",
+		"@fontsource/material-symbols-rounded": "^5.3.9",
+		"@fontsource/zen-maru-gothic": "^5.3.1",
 		"lucide-react": "^1.59.0",
 		"qrcode.react": "^4.2.0"
 	},

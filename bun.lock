@@ -5,6 +5,8 @@
     "": {
       "name": "event-management-service",
       "dependencies": {
+        "@fontsource/material-symbols-rounded": "^5.3.9",
+        "@fontsource/zen-maru-gothic": "^5.3.1",
         "@tanstack/react-router": "1.170.45",
         "@tanstack/react-start": "1.169.3",
         "drizzle-orm": "^0.45.1",
@@ -161,6 +163,10 @@
     "@esbuild/win32-ia32": ["@esbuild/win32-ia32@0.25.12", "", { "os": "win32", "cpu": "ia32" }, "sha512-HkqnmmBoCbCwxUKKNPBixiWDGCpQGVsrQfJoVGYLPT41XWF8lHuE5N6WhVia2n4o5QK5M4tYr21827fNhi4byQ=="],
 
     "@esbuild/win32-x64": ["@esbuild/win32-x64@0.25.12", "", { "os": "win32", "cpu": "x64" }, "sha512-alJC0uCZpTFrSL0CCDjcgleBXPnCrEAhTBILpeAp7M/OFgoqtAetfBzX0xM00MUsVVPpVjlPuMbREqnZCXaTnA=="],
+
+    "@fontsource/material-symbols-rounded": ["@fontsource/material-symbols-rounded@5.3.9", "", {}, "sha512-YjTHbXXblQwjtL7qZ4F+7//oirb+mM26FCUkifP5NCpJRIybdobaPn4jhKFjTrPrqNrEeM3c4EhhN5tiaj38uw=="],
+
+    "@fontsource/zen-maru-gothic": ["@fontsource/zen-maru-gothic@5.3.1", "", {}, "sha512-DtDKg44WTu44VuUWIJq8oAdCMHkkKrlpUaYHPbBQQkr8eZUNUjdWtzTJM3QIVlYYqdUPZN0Oy2a20EbxPJnF/g=="],
 
     "@img/colour": ["@img/colour@1.1.0", "", {}, "sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ=="],
 

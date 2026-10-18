@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "e3e4c9cc-9c78-4e59-ba23-70a293729ac8",
+  "id": "27305fd8-c6f4-43de-9ce1-cdcbad5b8a13",
   "prevId": "495394e8-fddd-486b-bc6c-614978032fe6",
   "tables": {
     "chat_messages": {
@@ -96,14 +96,6 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
-        },
-        "device_name": {
-          "name": "device_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'ブラウザー'"
         },
         "token_hash": {
           "name": "token_hash",
@@ -775,6 +767,14 @@
             "kind"
           ],
           "isUnique": false
+        },
+        "reactions_participant_created_idx": {
+          "name": "reactions_participant_created_idx",
+          "columns": [
+            "participant_id",
+            "created_at"
+          ],
+          "isUnique": false
         }
       },
       "foreignKeys": {
@@ -843,6 +843,14 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "''"
         },
         "body": {
           "name": "body",
