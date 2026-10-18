@@ -1,6 +1,6 @@
 # Workshop Commons 開発・運営ガイド
 
-[プロダクトの概要と実装の根拠はREADMEを参照してください。](../README.md)
+[プロジェクト概要と起動手順](../README.md) · [ハッカソン作品紹介・実装の根拠](hackathon.md)
 
 TanStack Start・React・TypeScript、Cloudflare Workers / D1、Drizzle ORMで構成した開発環境です。パッケージ管理にはBunを使います。
 
