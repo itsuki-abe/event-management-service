@@ -22,9 +22,12 @@
 		"test:smoke": "node scripts/smoke.mjs"
 	},
 	"dependencies": {
+		"@fontsource/zen-maru-gothic": "^5.3.1",
+		"@phosphor-icons/react": "^2.1.10",
 		"@tanstack/react-router": "1.170.45",
 		"@tanstack/react-start": "1.169.3",
 		"drizzle-orm": "^0.45.1",
+		"qrcode.react": "^4.2.0",
 		"react": "^19.2.0",
 		"react-dom": "^19.2.0"
 	},

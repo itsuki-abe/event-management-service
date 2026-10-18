@@ -73,3 +73,23 @@ bun run deploy
 `db:migrate:remote` と `deploy` はCloudflare上のリソースを変更します。
 
 [CloudflareのTanStack Startガイド](https://developers.cloudflare.com/workers/framework-guides/web-apps/tanstack-start/)と[DrizzleのD1ガイド](https://orm.drizzle.team/docs/get-started/d1-new)を参照できます。
+
+## Workshop Commons UI
+
+The selected Commons design is implemented in the existing TanStack Start app. Run `bun run dev` and open http://localhost:3000.
+
+| Route | Screen |
+| --- | --- |
+| / | Event home |
+| /venue | Venue guide with Wi-Fi copy and detail accordions |
+| /live | Live talk, reactions and comment/name flow |
+| /team | Team participation and assignment |
+| /admin | Talk controls, moderation and team preview |
+| /presenter | Presenter preparation and reaction display |
+| /screen | Venue projection with a real participant QR |
+
+The header menu switches roles. The UI adapts at 760px. This is a frontend interaction prototype: data is in memory for the current browser tab. Authentication, backend persistence, cross-device realtime updates and WebRTC media transport are not connected. Sharing preparation currently displays UI states and does not capture a screen.
+
+The original design render functions are scoped to a React host in src/components/commons-page.tsx. CSS lives in src/styles.css; generated illustrations and avatars live in public/assets/commons. Zen Maru Gothic is self-hosted. Standard icons are local assets generated with Phosphor, and qrcode.react encodes the current participant URL.
+
+Validation: `bun run check`, `bun run typecheck`, `bun run build`. An optional browser check is available as `bun run scripts/check-commons-ui.mjs` when Edge is running with a clean profile on debugging port 9228 and Vite is running on port 3000. It verifies all seven views, 390px layout, reactions, comments and navigation.

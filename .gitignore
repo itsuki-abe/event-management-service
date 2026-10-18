@@ -9,3 +9,6 @@ dist/
 !.env.example
 *.local
 .DS_Store
+
+# Generated design studies, screenshots, and isolated browser profiles
+/output/
