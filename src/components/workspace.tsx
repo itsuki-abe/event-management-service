@@ -20,7 +20,7 @@ export type WorkspaceSection =
 	| "admin"
 	| "guide-admin"
 	| "comments"
-	| "engagement"
+	| "screen"
 	| "qr"
 	| "guide"
 	| "participants"
@@ -32,7 +32,6 @@ export function WorkspaceShell({
 	eventId = 1,
 	name,
 	identity,
-	bare = false,
 	registrationOnly = false,
 }: {
 	children: React.ReactNode;
@@ -40,14 +39,12 @@ export function WorkspaceShell({
 	eventId?: string | number;
 	name?: string;
 	identity?: string;
-	bare?: boolean;
 	registrationOnly?: boolean;
 }) {
-	if (bare) return children;
 	const eventPath = `/events/${encodeURIComponent(eventId)}`;
 	const active = ["registration", "connect", "qr"].includes(section)
 		? "dashboard"
-		: section === "engagement"
+		: section === "screen"
 			? "live"
 			: section;
 	const navigation = [
@@ -56,7 +53,7 @@ export function WorkspaceShell({
 		{
 			id: "live",
 			label: "LTライブ",
-			href: `/engagement?eventId=${encodeURIComponent(eventId)}`,
+			href: "/screen",
 			icon: MessageCircle,
 		},
 		{ id: "team", label: "チーム", href: `${eventPath}/team`, icon: Users },
@@ -168,7 +165,7 @@ export function WorkspaceShell({
 						</nav>
 					</section>
 				)}
-				{["live", "engagement"].includes(section) && (
+				{["live", "screen"].includes(section) && (
 					<nav className="wc-section-tabs" aria-label="LTライブの表示">
 						<a
 							href="/live"
@@ -177,10 +174,10 @@ export function WorkspaceShell({
 							発表・タイマー
 						</a>
 						<a
-							href={`/engagement?eventId=${encodeURIComponent(eventId)}`}
-							aria-current={section === "engagement" ? "page" : undefined}
+							href="/screen"
+							aria-current={section === "screen" ? "page" : undefined}
 						>
-							リアクション・コメント
+							画面共有・リアクション
 						</a>
 					</nav>
 				)}

@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
-import { Route as EngagementRouteImport } from './routes/engagement'
 import { Route as LiveRouteImport } from './routes/live'
 import { Route as ScreenRouteImport } from './routes/screen'
 import { Route as SpeakerRouteImport } from './routes/speaker'
@@ -39,11 +38,6 @@ const IndexRoute = IndexRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const EngagementRoute = EngagementRouteImport.update({
-  id: '/engagement',
-  path: '/engagement',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LiveRoute = LiveRouteImport.update({
@@ -141,7 +135,6 @@ const ApiEventsEventIdSplatRoute = ApiEventsEventIdSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
-  '/engagement': typeof EngagementRoute
   '/live': typeof LiveRoute
   '/screen': typeof ScreenRoute
   '/speaker': typeof SpeakerRoute
@@ -164,7 +157,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
-  '/engagement': typeof EngagementRoute
   '/live': typeof LiveRoute
   '/screen': typeof ScreenRoute
   '/speaker': typeof SpeakerRoute
@@ -188,7 +180,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
-  '/engagement': typeof EngagementRoute
   '/live': typeof LiveRoute
   '/screen': typeof ScreenRoute
   '/speaker': typeof SpeakerRoute
@@ -213,7 +204,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
-    | '/engagement'
     | '/live'
     | '/screen'
     | '/speaker'
@@ -236,7 +226,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
-    | '/engagement'
     | '/live'
     | '/screen'
     | '/speaker'
@@ -259,7 +248,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
-    | '/engagement'
     | '/live'
     | '/screen'
     | '/speaker'
@@ -283,7 +271,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
-  EngagementRoute: typeof EngagementRoute
   LiveRoute: typeof LiveRoute
   ScreenRoute: typeof ScreenRoute
   SpeakerRoute: typeof SpeakerRoute
@@ -317,13 +304,6 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/engagement': {
-      id: '/engagement'
-      path: '/engagement'
-      fullPath: '/engagement'
-      preLoaderRoute: typeof EngagementRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/live': {
@@ -470,7 +450,6 @@ const ApiEventsRouteWithChildren = ApiEventsRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
-  EngagementRoute: EngagementRoute,
   LiveRoute: LiveRoute,
   ScreenRoute: ScreenRoute,
   SpeakerRoute: SpeakerRoute,
