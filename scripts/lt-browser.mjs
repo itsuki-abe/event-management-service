@@ -212,7 +212,7 @@ try {
 		});
 		assert.equal(response.status(), 201, await response.text());
 	}
-	await viewers[2].reload();
+	await Promise.all(viewers.map((page) => page.reload()));
 	await expect(
 		viewers[2].getByRole("heading", { name: "あなたの発表はまだありません" }),
 	).toBeVisible();
@@ -286,12 +286,120 @@ try {
 		).toBeVisible();
 		await expect(time(page)).toHaveText("05:00");
 	}
-	// Follow the LT tab into the shared screen, then react and comment without leaving.
-	await viewers[0]
-		.getByRole("navigation", { name: "LTライブの表示" })
-		.getByRole("link", { name: "画面共有・リアクション", exact: true })
-		.click();
+	// Both the short URL and the LT navigation now use the integrated screen.
 	await expect(viewers[0]).toHaveURL(`${baseURL}/screen`);
+	// Enter on a mobile viewport and inspect the same participant's entry on a PC.
+	const entryPage = viewers[0];
+	await entryPage
+		.getByRole("link", { name: "LTにエントリー・発表順を確認", exact: true })
+		.click();
+	await expect(entryPage).toHaveURL(`${baseURL}/entries`);
+	await entryPage.setViewportSize({ width: 390, height: 844 });
+	const entryForm = entryPage.getByRole("form", {
+		name: "LTにエントリー",
+		exact: true,
+	});
+	await entryForm
+		.getByLabel("発表タイトル", { exact: true })
+		.fill("本人からのエントリー");
+	await entryForm.getByLabel("持ち時間", { exact: false }).fill("3:30");
+	await entryForm
+		.getByRole("button", { name: "エントリーする", exact: true })
+		.click();
+	const mine = entryPage.locator(".my-entry", {
+		hasText: "本人からのエントリー",
+	});
+	await expect(mine.locator(".entry-position")).toContainText("3番目");
+	await mine.getByRole("button", { name: "編集", exact: true }).click();
+	const edit = mine.getByRole("form", {
+		name: "エントリーを編集",
+		exact: true,
+	});
+	await edit
+		.getByLabel("発表タイトル", { exact: true })
+		.fill("編集済みエントリー");
+	await edit.getByRole("button", { name: "変更を保存", exact: true }).click();
+	const edited = entryPage.locator(".my-entry", {
+		hasText: "編集済みエントリー",
+	});
+	await expect(edited.getByRole("form")).toHaveCount(0);
+	const desktop = await viewerContext.newPage();
+	desktop.on("pageerror", (error) => errors.push(error.message));
+	await desktop.setViewportSize({ width: 1440, height: 1000 });
+	await desktop.goto("/entries");
+	const desktopEntry = desktop.locator(".my-entry", {
+		hasText: "編集済みエントリー",
+	});
+	await expect(desktopEntry.locator(".entry-position")).toContainText("3番目");
+	await expect(
+		admin.locator(".op-talk", { hasText: "編集済みエントリー" }),
+	).toBeVisible();
+	await admin
+		.getByRole("button", { name: "「編集済みエントリー」を上へ", exact: true })
+		.click();
+	for (const card of [edited, desktopEntry])
+		await expect(card.locator(".entry-position")).toContainText("2番目");
+	for (const page of [entryPage, desktop]) {
+		assert.equal(
+			await page
+				.locator(".program li")
+				.nth(1)
+				.locator(".text small")
+				.first()
+				.textContent(),
+			"編集済みエントリー",
+		);
+		assert.ok(
+			await page.evaluate(
+				() => document.documentElement.scrollWidth <= innerWidth,
+			),
+		);
+	}
+	await admin
+		.getByRole("button", {
+			name: "「編集済みエントリー」のエントリーを拒否",
+			exact: true,
+		})
+		.click();
+	const refusal = admin.getByRole("form", {
+		name: "エントリーの拒否",
+		exact: true,
+	});
+	await refusal
+		.getByLabel("拒否理由（任意）", { exact: true })
+		.fill("発表枠の調整のため");
+	await refusal
+		.getByRole("button", { name: "拒否を確定", exact: true })
+		.click();
+	for (const page of [entryPage, desktop]) {
+		const card = page.locator(".my-entry", { hasText: "編集済みエントリー" });
+		await expect(card).toContainText("主催者がエントリーを拒否しました");
+		await expect(card).toContainText("発表枠の調整のため");
+		await expect(page.locator(".program")).not.toContainText(
+			"編集済みエントリー",
+		);
+	}
+	await expect(
+		admin.locator(".op-talk", { hasText: "編集済みエントリー" }),
+	).toHaveCount(0);
+	await entryForm
+		.getByLabel("発表タイトル", { exact: true })
+		.fill("本人が取り消すエントリー");
+	await entryForm
+		.getByRole("button", { name: "エントリーする", exact: true })
+		.click();
+	const cancelled = entryPage.locator(".my-entry", {
+		hasText: "本人が取り消すエントリー",
+	});
+	await expect(cancelled.locator(".entry-position")).toContainText("3番目");
+	entryPage.once("dialog", (dialog) => dialog.accept());
+	await cancelled
+		.getByRole("button", { name: "取り消す", exact: true })
+		.click();
+	await expect(cancelled).toContainText("エントリーを取り消しました");
+	await expect(desktop.locator(".program li")).toHaveCount(2);
+	await desktop.close();
+	await entryPage.setViewportSize({ width: 1280, height: 900 });
 	await viewers[0].goto("/live");
 	const screen = viewers[1];
 	const speaker = viewers[2];
@@ -330,10 +438,6 @@ try {
 		.getByPlaceholder("感想や質問を書いてみよう")
 		.fill("画面を見ながら質問します");
 	await screen.getByRole("button", { name: "送信する", exact: true }).click();
-	await screen.getByLabel("表示名", { exact: true }).fill("視聴者");
-	await screen
-		.getByRole("button", { name: "この名前で送信", exact: true })
-		.click();
 	await expect(
 		screen.locator(".comment-text").getByText("画面を見ながら質問します"),
 	).toBeVisible();
@@ -398,16 +502,21 @@ try {
 
 	await viewerContext.setOffline(true);
 	await expect(
-		viewers[0].getByText("再接続中… 最後に取得した情報を表示しています", {
+		viewers[0].getByText("再接続中です", {
 			exact: true,
 		}),
 	).toBeVisible();
 	await viewerContext.setOffline(false);
+	for (const page of viewers.slice(0, 2))
+		await expect(page.getByText("再接続中です", { exact: true })).toHaveCount(
+			0,
+		);
 	for (const page of viewers)
 		await expect(page.locator(".lt-app .connection")).toHaveCount(0);
-	for (const page of viewers.slice(0, 1)) {
-		await expect(page.getByRole("button")).toHaveCount(0);
-	}
+	// The participant screen remains interactive after reconnecting.
+	await expect(
+		viewers[0].getByRole("button", { name: /^拍手を送る/ }),
+	).toBeVisible();
 	for (const page of [admin, ...viewers]) {
 		await page.setViewportSize({ width: 390, height: 844 });
 		assert.ok(
@@ -520,7 +629,7 @@ try {
 	);
 	assert.deepEqual(errors, [], "No unhandled browser errors are allowed.");
 	console.info(
-		"Browser QA passed: organizer access, comment management, first-run event and talks, shared-screen reactions/comments and mobile visibility, four-screen timer sync, reconnect, mobile layouts, registration/X profile, registered home and event enrollment QR.",
+		"Browser QA passed: self-entry/edit/cancel, mobile/PC order sync, organizer reorder/rejection, organizer access, comment management, first-run event and talks, shared-screen reactions/comments and mobile visibility, four-screen timer sync, reconnect, mobile layouts, registration/X profile, registered home and event enrollment QR.",
 	);
 } catch (error) {
 	console.error(error instanceof Error ? error.message : error);

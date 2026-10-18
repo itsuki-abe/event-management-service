@@ -22,6 +22,7 @@
 		"db:migrate:remote": "wrangler d1 migrations apply DB --remote",
 		"test:smoke": "node scripts/smoke.mjs",
 		"test:lt": "node scripts/lt-smoke.mjs",
+		"test:lt:entries": "vite build && node scripts/lt-entries-smoke.mjs",
 		"test:browser": "bun run build && node scripts/lt-browser.mjs",
 		"test:venue:browser": "bun run build && node scripts/venue-browser.mjs",
 		"test:participants:browser": "bun run build && node scripts/participants-browser.mjs",

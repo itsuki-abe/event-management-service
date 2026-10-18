@@ -12,11 +12,19 @@ const talkSchema = z.object({
 	elapsedSeconds: z.number().nonnegative(),
 });
 
+const entrySchema = talkSchema.extend({
+	entryStatus: z.enum(["accepted", "rejected", "cancelled"]),
+	rejectionReason: z.string().nullable(),
+});
+
 export const liveSnapshotSchema = z.object({
 	event: z
 		.object({ id: z.number().int().positive(), name: z.string() })
 		.nullable(),
 	talks: z.array(talkSchema),
+	participantId: z.number().int().positive().nullable(),
+	myEntries: z.array(entrySchema),
+	excludedEntries: z.array(entrySchema).optional(),
 	selectedTalkId: z.number().int().positive().nullable(),
 	shares: z.array(
 		z.object({
@@ -51,6 +59,27 @@ export const liveActionSchema = z.discriminatedUnion("action", [
 		durationSeconds: z.number().int().min(1).max(86400),
 	}),
 	z.object({ action: z.literal("deleteTalk"), revision, talkId }),
+	z.object({
+		action: z.literal("enterTalk"),
+		revision,
+		requestId: z.uuid(),
+		title: z.string().trim().min(1).max(200),
+		durationSeconds: z.number().int().min(1).max(86400),
+	}),
+	z.object({
+		action: z.literal("editEntry"),
+		revision,
+		talkId,
+		title: z.string().trim().min(1).max(200),
+		durationSeconds: z.number().int().min(1).max(86400),
+	}),
+	z.object({ action: z.literal("cancelEntry"), revision, talkId }),
+	z.object({
+		action: z.literal("rejectEntry"),
+		revision,
+		talkId,
+		reason: z.string().trim().max(500),
+	}),
 	z.object({
 		action: z.literal("move"),
 		revision,

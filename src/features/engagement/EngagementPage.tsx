@@ -331,6 +331,13 @@ export function EngagementPage({
 			)}
 			<div className={`commons-app ${admin ? "operator" : "screen-view"}`}>
 				<div className="page">
+					{!admin && (
+						<div className="entry-navigation">
+							<a className="wc-button wc-primary" href="/entries">
+								LTにエントリー・発表順を確認
+							</a>
+						</div>
+					)}
 					{admin && authorized !== true ? (
 						<OrganizerAccess authorized={authorized} />
 					) : (

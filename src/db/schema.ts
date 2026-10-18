@@ -114,6 +114,13 @@ export const talks = sqliteTable(
 		title: text().notNull(),
 		sortOrder: integer("sort_order").notNull().default(0),
 		durationSeconds: integer("duration_seconds").notNull(),
+		entryStatus: text("entry_status", {
+			enum: ["accepted", "rejected", "cancelled"],
+		})
+			.notNull()
+			.default("accepted"),
+		rejectionReason: text("rejection_reason"),
+		entryRequestId: text("entry_request_id"),
 		status: text({ enum: ["pending", "running", "paused", "ended"] })
 			.notNull()
 			.default("pending"),
@@ -129,6 +136,7 @@ export const talks = sqliteTable(
 			foreignColumns: [participants.id, participants.eventId],
 		}),
 		index("talks_event_order_idx").on(t.eventId, t.sortOrder),
+		uniqueIndex("talks_entry_request_idx").on(t.entryRequestId),
 		uniqueIndex("talks_one_active_per_event")
 			.on(t.eventId)
 			.where(sql`${t.status} in ('running', 'paused')`),

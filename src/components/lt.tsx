@@ -3,6 +3,7 @@ import {
 	ChevronDown,
 	ChevronUp,
 	CircleAlert,
+	CircleX,
 	Flame,
 	Hand,
 	Lightbulb,
@@ -35,12 +36,13 @@ import {
 import { participationApi } from "../lib/participation";
 import type { Guide } from "../lib/venue";
 import { draftsFrom } from "./guide-admin";
+import { EntryPanel } from "./lt-entries";
 import { OrganizerAccess } from "./organizer-access";
 import { ShareVideo, useSharePublisher, useShareViewer } from "./share";
 import { SpeakerAvatar } from "./speaker-avatar";
 import { WorkspaceShell } from "./workspace";
 
-type Mode = "admin" | "screen" | "speaker";
+type Mode = "admin" | "screen" | "speaker" | "entries";
 type Talk = LiveSnapshot["talks"][number];
 type TalkAction = Extract<LiveAction, { talkId: number }>["action"];
 const statusLabels = {
@@ -267,12 +269,21 @@ export function LtPage({ mode }: { mode: Mode }) {
 
 	return (
 		<WorkspaceShell
-			section={mode}
+			section={mode === "entries" ? "live" : mode}
 			eventId={data?.event?.id ?? 1}
 			name={data?.event?.name}
 		>
 			<div className={`lt-app ${mode}`}>
-				{mode === "admin" ? <AdminView {...view} /> : <SpeakerView {...view} />}
+				{mode === "entries" ? (
+					<>
+						<EntryPanel {...view} />
+						<EntriesProgram {...view} />
+					</>
+				) : mode === "admin" ? (
+					<AdminView {...view} />
+				) : (
+					<SpeakerView {...view} />
+				)}
 			</div>
 		</WorkspaceShell>
 	);
@@ -283,6 +294,81 @@ type ViewProps = ReturnType<typeof useLive> & {
 	next: Talk | undefined;
 	position: string;
 };
+
+function EntriesProgram({
+	data,
+	connected,
+	now,
+	current,
+	next,
+	position,
+}: ViewProps) {
+	return (
+		<>
+			<Connection connected={connected} hasData={Boolean(data)} />
+			<div className="live-layout">
+				<section aria-label="現在の発表">
+					{current ? (
+						<>
+							<div className="live-title">
+								<div className="row between">
+									<span className="eyebrow">LT LIVE · {position}</span>
+									<Status talk={current} now={now} />
+								</div>
+								<h1>{current.title}</h1>
+								<div className="row">
+									<Initial talk={current} />
+									<strong>{current.speaker}</strong>
+								</div>
+							</div>
+							<div className="time-panel">
+								<Timer talk={current} now={now} />
+							</div>
+						</>
+					) : (
+						<p className="muted">
+							{data ? "発表の開始をお待ちください。" : "読み込み中…"}
+						</p>
+					)}
+				</section>
+				{data && data.talks.length > 0 && (
+					<section className="panel" aria-label="プログラム">
+						<h2>プログラム</h2>
+						<ol className="program">
+							{data.talks.map((talk, index) => (
+								<li
+									key={talk.id}
+									className={`${talk.id === current?.id ? "active" : talk.status}${talk.speakerId === data.participantId ? " mine" : ""}`}
+									aria-current={talk.id === current?.id ? "true" : undefined}
+								>
+									<span className="num">{pad(index + 1)}</span>
+									<span className="text">
+										<strong>{talk.speaker}</strong>
+										<small>{talk.title}</small>
+										{talk.speakerId === data.participantId && (
+											<small className="my-talk-label">あなたの発表</small>
+										)}
+									</span>
+									{talk.id === current?.id ? (
+										<Status talk={talk} now={now} />
+									) : talk.id === next?.id ? (
+										<span className="badge blue">次</span>
+									) : talk.status === "ended" ? (
+										<span className="badge gray">終了</span>
+									) : (
+										<small className="muted">
+											{minutes(talk.durationSeconds)}
+										</small>
+									)}
+								</li>
+							))}
+						</ol>
+					</section>
+				)}
+			</div>
+		</>
+	);
+}
 
 const reactionIcons = {
 	applause: Hand,
@@ -341,6 +427,7 @@ function SpeakerView({ data, connected, now, current }: ViewProps) {
 		<>
 			<div className="wc-page-heading">
 				<h1>発表者の手元</h1>
+				<a href="/entries">LTにエントリー・発表順を確認</a>
 				<p>自分の発表と会場の反応を確認できます。</p>
 			</div>
 			<Connection connected={connected} hasData={Boolean(data)} />
@@ -368,7 +455,7 @@ function SpeakerView({ data, connected, now, current }: ViewProps) {
 				<section className="wc-access-panel">
 					<h2>あなたの発表はまだありません</h2>
 					<p>
-						運営が発表者として登録すると、ここに持ち時間と画面共有の操作が表示されます。
+						LTにエントリーすると、ここに持ち時間と画面共有の操作が表示されます。
 					</p>
 				</section>
 			) : (
@@ -533,6 +620,7 @@ function AdminView({
 	const [authorized, setAuthorized] = useState<boolean | null>(null);
 	const [editing, setEditing] = useState<number | null>(null);
 	const [adding, setAdding] = useState(false);
+	const [rejecting, setRejecting] = useState<number | null>(null);
 	useEffect(() => {
 		void run({ action: "authorize" }).then(
 			(ok) => ok !== undefined && setAuthorized(ok),
@@ -680,6 +768,12 @@ function AdminView({
 														onClick={() => setEditing(talk.id)}
 													/>
 													<IconButton
+														label={`「${talk.title}」のエントリーを拒否`}
+														icon={CircleX}
+														disabled={disabled}
+														onClick={() => setRejecting(talk.id)}
+													/>
+													<IconButton
 														label={`「${talk.title}」を削除`}
 														icon={Trash2}
 														disabled={disabled}
@@ -691,10 +785,75 @@ function AdminView({
 												</>
 											)}
 										</span>
+										{rejecting === talk.id && talk.status === "pending" && (
+											<form
+												className="entry-rejection"
+												aria-label="エントリーの拒否"
+												onSubmit={async (event) => {
+													event.preventDefault();
+													const reason = String(
+														new FormData(event.currentTarget).get("reason"),
+													);
+													if (
+														await run({
+															action: "rejectEntry",
+															revision: data.revision,
+															talkId: talk.id,
+															reason,
+														})
+													)
+														setRejecting(null);
+												}}
+											>
+												<p>
+													「{talk.title}
+													」を拒否すると、発表順から外れます。本人には結果と理由が表示されます。
+												</p>
+												<label>
+													拒否理由（任意）
+													<textarea name="reason" maxLength={500} rows={3} />
+												</label>
+												<div className="row">
+													<button
+														className="danger"
+														type="submit"
+														disabled={disabled}
+													>
+														拒否を確定
+													</button>
+													<button
+														className="secondary"
+														type="button"
+														onClick={() => setRejecting(null)}
+													>
+														やめる
+													</button>
+												</div>
+											</form>
+										)}
 									</li>
 								),
 							)}
 						</ol>
+						{Boolean(data.excludedEntries?.length) && (
+							<details className="entry-excluded">
+								<summary>
+									拒否・取消済み（{data.excludedEntries?.length}件）
+								</summary>
+								{data.excludedEntries?.map((entry) => (
+									<article className="my-entry" key={entry.id}>
+										<strong>{entry.title}</strong>
+										<p>
+											{entry.speaker} ·{" "}
+											{entry.entryStatus === "rejected" ? "拒否" : "本人が取消"}
+										</p>
+										{entry.rejectionReason && (
+											<p>拒否理由：{entry.rejectionReason}</p>
+										)}
+									</article>
+								))}
+							</details>
+						)}
 						<details
 							className="add"
 							open={adding || !data.talks.length}

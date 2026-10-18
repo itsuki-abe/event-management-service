@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as EntriesRouteImport } from './routes/entries'
 import { Route as LiveRouteImport } from './routes/live'
 import { Route as ScreenRouteImport } from './routes/screen'
 import { Route as SpeakerRouteImport } from './routes/speaker'
@@ -37,6 +38,11 @@ const IndexRoute = IndexRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EntriesRoute = EntriesRouteImport.update({
+  id: '/entries',
+  path: '/entries',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LiveRoute = LiveRouteImport.update({
@@ -129,6 +135,7 @@ const ApiEventsEventIdSplatRoute = ApiEventsEventIdSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/entries': typeof EntriesRoute
   '/live': typeof LiveRoute
   '/screen': typeof ScreenRoute
   '/speaker': typeof SpeakerRoute
@@ -150,6 +157,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/entries': typeof EntriesRoute
   '/live': typeof LiveRoute
   '/screen': typeof ScreenRoute
   '/speaker': typeof SpeakerRoute
@@ -172,6 +180,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/entries': typeof EntriesRoute
   '/live': typeof LiveRoute
   '/screen': typeof ScreenRoute
   '/speaker': typeof SpeakerRoute
@@ -195,6 +204,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/entries'
     | '/live'
     | '/screen'
     | '/speaker'
@@ -216,6 +226,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
+    | '/entries'
     | '/live'
     | '/screen'
     | '/speaker'
@@ -237,6 +248,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/entries'
     | '/live'
     | '/screen'
     | '/speaker'
@@ -259,6 +271,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  EntriesRoute: typeof EntriesRoute
   LiveRoute: typeof LiveRoute
   ScreenRoute: typeof ScreenRoute
   SpeakerRoute: typeof SpeakerRoute
@@ -291,6 +304,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/entries': {
+      id: '/entries'
+      path: '/entries'
+      fullPath: '/entries'
+      preLoaderRoute: typeof EntriesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/live': {
@@ -430,6 +450,7 @@ const ApiEventsRouteWithChildren = ApiEventsRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  EntriesRoute: EntriesRoute,
   LiveRoute: LiveRoute,
   ScreenRoute: ScreenRoute,
   SpeakerRoute: SpeakerRoute,
@@ -450,3 +471,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}

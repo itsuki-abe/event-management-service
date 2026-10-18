@@ -85,8 +85,8 @@ async function snapshot(request: Request) {
 		})
 		.from(talks)
 		.innerJoin(participants, eq(talks.speakerId, participants.id))
-		.where(eq(talks.eventId, eventId))
-		.orderBy(asc(talks.sortOrder));
+		.where(and(eq(talks.eventId, eventId), eq(talks.entryStatus, "accepted")))
+		.orderBy(asc(talks.sortOrder), asc(talks.id));
 	const talkList = talkRows.map((talk) => ({
 		...talk,
 		resumedAt: talk.resumedAt?.getTime() ?? null,
@@ -219,7 +219,13 @@ async function mutate(request: Request) {
 	const [talk] = await db
 		.select({ id: talks.id })
 		.from(talks)
-		.where(and(eq(talks.id, talkId), eq(talks.eventId, eventId)));
+		.where(
+			and(
+				eq(talks.id, talkId),
+				eq(talks.eventId, eventId),
+				eq(talks.entryStatus, "accepted"),
+			),
+		);
 	if (!talk) throw new ApiError(404, "このイベントの発表が見つかりません。");
 	if (
 		body.action === "comment" &&
@@ -242,7 +248,8 @@ async function mutate(request: Request) {
 			id: number;
 		}>(sql`INSERT INTO reactions (event_id, talk_id, participant_id, kind, created_at)
 			SELECT ${eventId}, ${talkId}, ${user.id}, ${body.kind as string}, ${now}
-			WHERE NOT EXISTS (SELECT 1 FROM reactions WHERE participant_id = ${user.id} AND created_at > ${now - 1}) RETURNING id`);
+			WHERE EXISTS (SELECT 1 FROM talks WHERE id = ${talkId} AND event_id = ${eventId} AND entry_status = 'accepted')
+			AND NOT EXISTS (SELECT 1 FROM reactions WHERE participant_id = ${user.id} AND created_at > ${now - 1}) RETURNING id`);
 		if (!result.length)
 			return json({ error: "少し待ってからリアクションしてください。" }, 429);
 		id = result[0].id;
@@ -252,7 +259,8 @@ async function mutate(request: Request) {
 			id: number;
 		}>(sql`INSERT INTO talk_comments (event_id, talk_id, participant_id, display_name, body, created_at)
 			SELECT ${eventId}, ${talkId}, ${user.id}, ${user.nickname}, ${(body.body as string).trim()}, ${now}
-			WHERE EXISTS (SELECT 1 FROM event_live_state WHERE event_id = ${eventId} AND comments_enabled = 1) RETURNING id`);
+			WHERE EXISTS (SELECT 1 FROM event_live_state WHERE event_id = ${eventId} AND comments_enabled = 1)
+			AND EXISTS (SELECT 1 FROM talks WHERE id = ${talkId} AND event_id = ${eventId} AND entry_status = 'accepted') RETURNING id`);
 		if (!result.length)
 			return json(
 				{

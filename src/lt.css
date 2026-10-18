@@ -4,7 +4,8 @@
 	}
 	button,
 	input,
-	select {
+	select,
+	textarea {
 		font: inherit;
 	}
 	button,
@@ -101,7 +102,8 @@
 		font-size: 14px;
 	}
 	input,
-	select {
+	select,
+	textarea {
 		width: 100%;
 		border: 1px solid #b8c0c8;
 		border-radius: 7px;
@@ -654,4 +656,96 @@
 			order: -1;
 		}
 	}
+}
+
+.lt-app .entry-panel a {
+	display: inline-flex;
+	align-items: center;
+	min-height: 46px;
+}
+.lt-app .entry-panel {
+	margin-bottom: 32px;
+}
+.lt-app .entry-layout {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 24px;
+	align-items: start;
+}
+.lt-app .entry-card {
+	padding: 24px;
+	display: grid;
+	gap: 18px;
+	min-width: 0;
+}
+.lt-app .entry-form {
+	display: grid;
+	gap: 16px;
+}
+.lt-app .entry-form small {
+	color: var(--muted);
+	font-weight: 400;
+}
+.lt-app .my-entry {
+	display: grid;
+	gap: 12px;
+	padding: 18px 0;
+	border-top: 1px solid var(--line);
+	overflow-wrap: anywhere;
+}
+.lt-app .entry-position,
+.lt-app .my-talk-label {
+	color: var(--blue);
+	font-weight: 700;
+}
+.lt-app .entry-position[data-entry-status="rejected"] {
+	color: var(--red);
+}
+.lt-app .entry-position[data-entry-status="cancelled"] {
+	color: var(--muted);
+}
+.lt-app .program li.mine {
+	border-left: 4px solid var(--blue);
+}
+.lt-app .entry-rejection {
+	display: grid;
+	gap: 14px;
+	padding: 16px;
+	background: var(--surface);
+	color: var(--ink);
+}
+.lt-app .entry-rejection textarea {
+	resize: vertical;
+}
+.lt-app .entry-excluded {
+	margin: 18px 0;
+}
+.lt-app .entry-excluded summary {
+	cursor: pointer;
+	padding: 12px 0;
+	font-weight: 700;
+}
+@media (max-width: 760px) {
+	.lt-app .entry-layout {
+		grid-template-columns: minmax(0, 1fr);
+	}
+	.lt-app .entry-layout > section {
+		order: -1;
+	}
+	.lt-app .entry-card {
+		padding: 18px;
+	}
+	.lt-app .entry-panel .row {
+		flex-wrap: wrap;
+	}
+	.lt-app .entry-rejection .row {
+		flex-wrap: wrap;
+	}
+	.lt-app .op-tools {
+		flex-wrap: wrap;
+	}
+}
+
+.entry-navigation {
+	margin-bottom: 20px;
 }
