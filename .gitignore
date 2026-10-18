@@ -8,7 +8,8 @@ dist/
 .env*
 !.env.example
 *.local
+*.local.*
 .DS_Store
-
-# Generated design studies, screenshots, and isolated browser profiles
 /output/
+.playwright-cli/
+.sites/

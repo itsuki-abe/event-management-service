@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { CommonsPage } from "../components/commons-page";
-export const Route = createFileRoute("/admin")({ component: Page });
-function Page() {
-	return <CommonsPage view="operator" />;
-}
+import { LtPage } from "../components/lt";
+export const Route = createFileRoute("/admin")({
+	component: () => <LtPage mode="admin" />,
+});

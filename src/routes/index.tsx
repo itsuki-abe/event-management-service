@@ -1,6 +1,3 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { CommonsPage } from "../components/commons-page";
-export const Route = createFileRoute("/")({ component: Page });
-function Page() {
-	return <CommonsPage view="home" />;
-}
+import { Dashboard } from "../components/dashboard";
+export const Route = createFileRoute("/")({ component: Dashboard });

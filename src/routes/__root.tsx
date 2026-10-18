@@ -5,6 +5,7 @@ import appCss from "../styles.css?url";
 export const Route = createRootRoute({
 	head: () => ({
 		meta: [
+			{ name: "referrer", content: "no-referrer" },
 			{
 				charSet: "utf-8",
 			},
@@ -13,15 +14,10 @@ export const Route = createRootRoute({
 				content: "width=device-width, initial-scale=1",
 			},
 			{
-				title: "Workshop Commons — Tech Meetup",
+				title: "Workshop Commons",
 			},
 		],
-		links: [
-			{
-				rel: "stylesheet",
-				href: appCss,
-			},
-		],
+		links: [{ rel: "stylesheet", href: appCss }],
 	}),
 	shellComponent: RootDocument,
 });
