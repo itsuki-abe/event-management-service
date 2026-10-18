@@ -19,14 +19,16 @@
 		"cf-typegen": "wrangler types",
 		"typecheck": "bun run generate-routes && bun run cf-typegen && tsc --noEmit",
 		"db:migrate:remote": "wrangler d1 migrations apply DB --remote",
-		"test:smoke": "node scripts/smoke.mjs"
+		"test:smoke": "node scripts/smoke.mjs",
+		"test:lt": "node scripts/lt-smoke.mjs"
 	},
 	"dependencies": {
 		"@tanstack/react-router": "1.170.45",
 		"@tanstack/react-start": "1.169.3",
 		"drizzle-orm": "^0.45.1",
 		"react": "^19.2.0",
-		"react-dom": "^19.2.0"
+		"react-dom": "^19.2.0",
+		"zod": "^4.6.7"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.4.5",

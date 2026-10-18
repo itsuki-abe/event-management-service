@@ -1,0 +1,2 @@
+# Copy to .dev.vars and set a private organizer key.
+ORGANIZER_KEY=replace-with-a-long-random-key

@@ -13,10 +13,14 @@ export const Route = createRootRoute({
 				content: "width=device-width, initial-scale=1",
 			},
 			{
-				title: "Event Management Service",
+				title: "LTライブ",
 			},
 		],
 		links: [
+			{
+				rel: "stylesheet",
+				href: "https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap",
+			},
 			{
 				rel: "stylesheet",
 				href: appCss,
@@ -28,7 +32,7 @@ export const Route = createRootRoute({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
 	return (
-		<html lang="en">
+		<html lang="ja">
 			<head>
 				<HeadContent />
 			</head>

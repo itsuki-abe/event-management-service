@@ -10,11 +10,36 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as LiveRouteImport } from './routes/live'
+import { Route as ScreenRouteImport } from './routes/screen'
+import { Route as SpeakerRouteImport } from './routes/speaker'
 import { Route as ApiHealthRouteImport } from './routes/api.health'
+import { Route as ApiLtRouteImport } from './routes/api.lt'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LiveRoute = LiveRouteImport.update({
+  id: '/live',
+  path: '/live',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ScreenRoute = ScreenRouteImport.update({
+  id: '/screen',
+  path: '/screen',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SpeakerRoute = SpeakerRouteImport.update({
+  id: '/speaker',
+  path: '/speaker',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiHealthRoute = ApiHealthRouteImport.update({
@@ -22,31 +47,78 @@ const ApiHealthRoute = ApiHealthRouteImport.update({
   path: '/api/health',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiLtRoute = ApiLtRouteImport.update({
+  id: '/api/lt',
+  path: '/api/lt',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/live': typeof LiveRoute
+  '/screen': typeof ScreenRoute
+  '/speaker': typeof SpeakerRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/lt': typeof ApiLtRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/live': typeof LiveRoute
+  '/screen': typeof ScreenRoute
+  '/speaker': typeof SpeakerRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/lt': typeof ApiLtRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/live': typeof LiveRoute
+  '/screen': typeof ScreenRoute
+  '/speaker': typeof SpeakerRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/lt': typeof ApiLtRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/health'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/live'
+    | '/screen'
+    | '/speaker'
+    | '/api/health'
+    | '/api/lt'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/health'
-  id: '__root__' | '/' | '/api/health'
+  to:
+    | '/'
+    | '/admin'
+    | '/live'
+    | '/screen'
+    | '/speaker'
+    | '/api/health'
+    | '/api/lt'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/live'
+    | '/screen'
+    | '/speaker'
+    | '/api/health'
+    | '/api/lt'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
+  LiveRoute: typeof LiveRoute
+  ScreenRoute: typeof ScreenRoute
+  SpeakerRoute: typeof SpeakerRoute
   ApiHealthRoute: typeof ApiHealthRoute
+  ApiLtRoute: typeof ApiLtRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -58,6 +130,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/live': {
+      id: '/live'
+      path: '/live'
+      fullPath: '/live'
+      preLoaderRoute: typeof LiveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/screen': {
+      id: '/screen'
+      path: '/screen'
+      fullPath: '/screen'
+      preLoaderRoute: typeof ScreenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/speaker': {
+      id: '/speaker'
+      path: '/speaker'
+      fullPath: '/speaker'
+      preLoaderRoute: typeof SpeakerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/health': {
       id: '/api/health'
       path: '/api/health'
@@ -65,12 +165,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/lt': {
+      id: '/api/lt'
+      path: '/api/lt'
+      fullPath: '/api/lt'
+      preLoaderRoute: typeof ApiLtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
+  LiveRoute: LiveRoute,
+  ScreenRoute: ScreenRoute,
+  SpeakerRoute: SpeakerRoute,
   ApiHealthRoute: ApiHealthRoute,
+  ApiLtRoute: ApiLtRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
