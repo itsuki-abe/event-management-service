@@ -33,8 +33,15 @@
     {
       "idx": 4,
       "version": "6",
-      "when": 1792308237350,
-      "tag": "0004_screen_share",
+      "when": 1792308592057,
+      "tag": "0004_participant_x_username",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1792309536668,
+      "tag": "0005_screen_share",
       "breakpoints": true
     }
   ]

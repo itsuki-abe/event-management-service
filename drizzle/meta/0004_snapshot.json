@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "73245502-8974-4989-9275-26ad3feb66e5",
+  "id": "c7313b75-8524-4e8a-9f6a-cce0956e1ad5",
   "prevId": "355d90c7-c7d2-4baf-8246-36bf62e62b7e",
   "tables": {
     "chat_messages": {
@@ -662,6 +662,13 @@
           "notNull": false,
           "autoincrement": false
         },
+        "x_username": {
+          "name": "x_username",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "integer",
@@ -807,135 +814,6 @@
           "tableTo": "participants",
           "columnsFrom": [
             "participant_id",
-            "event_id"
-          ],
-          "columnsTo": [
-            "id",
-            "event_id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "screen_share_signals": {
-      "name": "screen_share_signals",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "session_id": {
-          "name": "session_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "offer": {
-          "name": "offer",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "answer": {
-          "name": "answer",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "screen_share_signals_session_idx": {
-          "name": "screen_share_signals_session_idx",
-          "columns": [
-            "session_id"
-          ],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "screen_share_signals_session_id_screen_shares_session_id_fk": {
-          "name": "screen_share_signals_session_id_screen_shares_session_id_fk",
-          "tableFrom": "screen_share_signals",
-          "tableTo": "screen_shares",
-          "columnsFrom": [
-            "session_id"
-          ],
-          "columnsTo": [
-            "session_id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "screen_shares": {
-      "name": "screen_shares",
-      "columns": {
-        "session_id": {
-          "name": "session_id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "event_id": {
-          "name": "event_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "started_at": {
-          "name": "started_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "heartbeat_at": {
-          "name": "heartbeat_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "screen_shares_event_idx": {
-          "name": "screen_shares_event_idx",
-          "columns": [
-            "event_id"
-          ],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "screen_shares_session_id_event_id_device_sessions_id_event_id_fk": {
-          "name": "screen_shares_session_id_event_id_device_sessions_id_event_id_fk",
-          "tableFrom": "screen_shares",
-          "tableTo": "device_sessions",
-          "columnsFrom": [
-            "session_id",
             "event_id"
           ],
           "columnsTo": [

@@ -3,7 +3,12 @@ type Session = {
 	participant_id: number | null;
 	token_hash: string;
 };
-type ParticipantRow = { id: number; nickname: string; profile: string | null };
+type ParticipantRow = {
+	id: number;
+	nickname: string;
+	profile: string | null;
+	xUsername: string | null;
+};
 
 const SESSION_SECONDS = 7 * 24 * 60 * 60;
 const PAIRING_SECONDS = 5 * 60;
@@ -130,6 +135,16 @@ function profileFields(body: Record<string, unknown>) {
 	const nickname =
 		typeof body.nickname === "string" ? body.nickname.trim() : "";
 	const profile = typeof body.profile === "string" ? body.profile.trim() : "";
+	if (body.xUsername != null && typeof body.xUsername !== "string")
+		throw new ApiError(400, "Xのユーザ名を文字列で入力してください。");
+	const rawXUsername =
+		typeof body.xUsername === "string" ? body.xUsername.trim() : "";
+	const xUsername = rawXUsername.replace(/^@/, "");
+	if (rawXUsername && !/^[A-Za-z0-9_]{1,15}$/.test(xUsername))
+		throw new ApiError(
+			400,
+			"Xのユーザ名は、半角英数字・_（アンダースコア）で15文字以内にしてください。@は先頭に付けても構いません。",
+		);
 	if (
 		!nickname ||
 		Array.from(nickname).length > 40 ||
@@ -139,7 +154,7 @@ function profileFields(body: Record<string, unknown>) {
 			400,
 			"表示名は1〜40文字、自己紹介は500文字以内で入力してください。",
 		);
-	return { nickname, profile: profile || null };
+	return { nickname, profile: profile || null, xUsername: xUsername || null };
 }
 
 async function codeHash(body: Record<string, unknown>) {
@@ -163,7 +178,7 @@ async function snapshot(
 	const participant = session?.participant_id
 		? await database
 				.prepare(
-					"SELECT id, nickname, profile FROM participants WHERE id = ? AND event_id = ?",
+					"SELECT id, nickname, profile, x_username AS xUsername FROM participants WHERE id = ? AND event_id = ?",
 				)
 				.bind(session.participant_id, event.id)
 				.first<ParticipantRow>()
@@ -271,7 +286,7 @@ export async function handleParticipation(
 			throw new ApiError(404, "ページが見つかりません。");
 		const body = await jsonBody(request);
 		if (action === "register") {
-			const { nickname, profile } = profileFields(body);
+			const { nickname, profile, xUsername } = profileFields(body);
 			session = await ensureSession(database, request, eventId, headers);
 			if (session.participant_id)
 				throw new ApiError(
@@ -280,9 +295,9 @@ export async function handleParticipation(
 				);
 			const results = await database.batch([
 				database
-					.prepare(`INSERT INTO participants (event_id, nickname, profile)
-					SELECT ?, ?, ? WHERE EXISTS (SELECT 1 FROM device_sessions WHERE id = ? AND participant_id IS NULL AND expires_at > ?) RETURNING id`)
-					.bind(eventId, nickname, profile, session.id, now()),
+					.prepare(`INSERT INTO participants (event_id, nickname, profile, x_username)
+					SELECT ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM device_sessions WHERE id = ? AND participant_id IS NULL AND expires_at > ?) RETURNING id`)
+					.bind(eventId, nickname, profile, xUsername, session.id, now()),
 				database
 					.prepare(
 						"UPDATE device_sessions SET participant_id = last_insert_rowid(), updated_at = ? WHERE id = ? AND participant_id IS NULL AND changes() = 1",
@@ -305,13 +320,14 @@ export async function handleParticipation(
 		}
 		if (action === "profile") {
 			const member = requireParticipant(session);
-			const { nickname, profile } = profileFields(body);
+			const { nickname, profile, xUsername } = profileFields(body);
 			const result = await database
-				.prepare(`UPDATE participants SET nickname = ?, profile = ?, updated_at = ? WHERE id = ? AND event_id = ?
+				.prepare(`UPDATE participants SET nickname = ?, profile = ?, x_username = ?, updated_at = ? WHERE id = ? AND event_id = ?
 				AND EXISTS (SELECT 1 FROM device_sessions WHERE id = ? AND participant_id = participants.id AND expires_at > ?)`)
 				.bind(
 					nickname,
 					profile,
+					xUsername,
 					now(),
 					member.participant_id,
 					eventId,
