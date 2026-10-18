@@ -330,8 +330,8 @@ textarea {
 	display: grid;
 	gap: 32px;
 	width: 100%;
-	max-width: 480px;
-	margin: clamp(40px, 12vh, 120px) auto;
+	max-width: 780px;
+	margin: clamp(24px, 6vh, 64px) auto;
 	padding: 32px 24px;
 	background: white;
 	border-top: 5px solid var(--blue);
@@ -339,6 +339,59 @@ textarea {
 .wc-registration-prompt h1 {
 	font-size: clamp(26px, 4vw, 36px);
 	overflow-wrap: anywhere;
+}
+.wc-registration-body {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 248px;
+	gap: 32px;
+	align-items: center;
+}
+.wc-registration-guide {
+	display: grid;
+	gap: 16px;
+}
+.wc-registration-guide h2 {
+	font-size: 22px;
+}
+.wc-registration-guide p {
+	color: var(--muted);
+	font-size: 14px;
+}
+.wc-registration-actions {
+	display: grid;
+	gap: 10px;
+	margin-top: 8px;
+}
+.wc-registration-qr {
+	display: grid;
+	justify-items: center;
+	gap: 12px;
+	margin: 0;
+	min-width: 0;
+	text-align: center;
+	font-size: 13px;
+}
+.wc-registration-qr svg {
+	display: block;
+	width: 224px;
+	max-width: 100%;
+	height: auto;
+	border: 1px solid var(--line);
+	border-radius: 8px;
+}
+.wc-registration-qr a {
+	max-width: 100%;
+	overflow-wrap: anywhere;
+	font-size: 12px;
+}
+@media (max-width: 640px) {
+	.wc-registration-body {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 24px;
+	}
+	.wc-registration-qr {
+		grid-row: 1;
+	}
 }
 .wc-home-intro h1 {
 	font-size: 44px;

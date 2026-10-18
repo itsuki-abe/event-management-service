@@ -337,6 +337,10 @@
 	overflow-wrap: anywhere;
 	margin: 0;
 }
+.participation .profile-x {
+	margin: 0 0 12px;
+	overflow-wrap: anywhere;
+}
 .participation .count {
 	font-size: 13px;
 	color: var(--muted);

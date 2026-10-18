@@ -7,6 +7,7 @@ import {
 	Users,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import {
 	elapsedSeconds,
 	formatTime,
@@ -24,8 +25,10 @@ export function Dashboard() {
 	const [notice, setNotice] = useState<Guide | null>(null);
 	const [error, setError] = useState("");
 	const [tick, setTick] = useState(0);
+	const [origin, setOrigin] = useState("");
 	const clock = useRef({ server: 0, received: 0 });
 	useEffect(() => {
+		setOrigin(window.location.origin);
 		const timer = setInterval(() => setTick(performance.now()), 1000);
 		return () => clearInterval(timer);
 	}, []);
@@ -116,10 +119,41 @@ export function Dashboard() {
 									: "イベントを確認しています…")}
 					</h1>
 					{eventPath && (
-						<a className="wc-button wc-primary wc-full" href={eventPath}>
-							参加登録
-							<ArrowRight size={21} aria-hidden="true" />
-						</a>
+						<div className="wc-registration-body">
+							<div className="wc-registration-guide">
+								<h2>まずは、スマホで参加登録</h2>
+								<p>
+									スマホのカメラでQRコードを読み取り、会場で呼ばれたい名前を登録しましょう。
+								</p>
+								<p>
+									登録が終わったら、お使いのPC／Macを接続します。スマホとPCで、同じ参加者としてイベントを楽しめます。
+								</p>
+								<div className="wc-registration-actions">
+									<p>スマホで開いている方は、こちらから。</p>
+									<a className="wc-button wc-primary wc-full" href={eventPath}>
+										参加登録へ進む
+										<ArrowRight size={21} aria-hidden="true" />
+									</a>
+								</div>
+							</div>
+							{origin && (
+								<figure className="wc-registration-qr">
+									<QRCodeSVG
+										value={`${origin}${eventPath}`}
+										size={224}
+										marginSize={4}
+										level="M"
+										role="img"
+										title="スマホで参加登録ページを開くQRコード"
+									/>
+									<figcaption>スマホのカメラで読み取る</figcaption>
+									<a href={eventPath}>
+										{origin}
+										{eventPath}
+									</a>
+								</figure>
+							)}
+						</div>
 					)}
 				</section>
 			</WorkspaceShell>
