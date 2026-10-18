@@ -347,7 +347,7 @@ export function login(request: Request) {
 	return new Response(null, {
 		status: 303,
 		headers: {
-			Location: valid ? "/admin" : "/admin?invalid",
+			Location: valid ? "/help?role=organizer" : "/admin?invalid",
 			"Cache-Control": "no-store",
 			...(valid && {
 				"Set-Cookie": `${organizerCookieName}=${encodeURIComponent(key)}; Path=/; HttpOnly; SameSite=Strict; Max-Age=2592000${url.protocol === "https:" ? "; Secure" : ""}`,

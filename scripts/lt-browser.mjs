@@ -175,7 +175,7 @@ try {
 		name: "メインメニュー",
 		exact: true,
 	});
-	await expect(menu).toHaveCount(0);
+	await expect(menu).toHaveCount(1);
 	await admin.goto("/engagement");
 	await expect(
 		menu.getByRole("link", { name: "LTライブ", exact: true }),
@@ -194,6 +194,12 @@ try {
 	await expect(gate).toBeVisible();
 	await expect(admin.getByLabel("イベント名", { exact: true })).toHaveCount(0);
 	await admin.goto(`/api/login?key=${encodeURIComponent(organizerKey)}`);
+	await expect(
+		admin.getByRole("heading", { name: "使い方ガイド", exact: true }),
+	).toBeVisible();
+	await admin
+		.getByRole("link", { name: "イベントを作成する", exact: true })
+		.click();
 	await admin
 		.getByLabel("イベント名", { exact: true })
 		.fill("ブラウザーQAイベント");
@@ -389,6 +395,12 @@ try {
 		name: "統合確認の参加者さんのXプロフィール（新しいタブで開く）",
 		exact: true,
 	});
+	await expect(
+		participant.getByRole("heading", { name: "使い方ガイド", exact: true }),
+	).toBeVisible();
+	await participant
+		.getByRole("link", { name: "プロフィールを開く", exact: true })
+		.click();
 	await expect(profileLink).toHaveAttribute("href", "https://x.com/merge_qa");
 	await participant.reload();
 	await expect(profileLink).toBeVisible();

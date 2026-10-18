@@ -56,5 +56,6 @@ TanStack Start / React / TypeScript、Cloudflare Workers / D1、Drizzle ORM、Bu
 
 ## 資料
 
+- [使い方ガイド](docs/usage-guide.md)：ログイン・参加登録後の役割別案内と画面共有の手順
 - [開発・運営ガイド](docs/development.md)：セットアップ、運営操作、API、DB、検証、公開手順
 - [ハッカソン作品紹介](docs/hackathon.md)：解決する課題、設計の狙い、DevDay新機能の活用、実装へのリンク

@@ -42,9 +42,13 @@ async function register(page, baseURL, nickname, xUsername = "") {
 		.fill("ものづくりとデザインについて話したいです。");
 	await page.getByRole("textbox", { name: /Xのプロフィール/ }).fill(xUsername);
 	await page.getByRole("button", { name: "この名前で参加する →" }).click();
+	await expect(page).toHaveURL(/\/help\?/);
 	await expect(
 		page.getByText("参加登録が完了しました。", { exact: true }),
 	).toBeVisible();
+	await page
+		.getByRole("link", { name: "プロフィールを開く", exact: true })
+		.click();
 }
 
 try {
