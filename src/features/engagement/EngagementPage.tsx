@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { SpeakerAvatar } from "../../components/speaker-avatar";
 import {
 	type EngagementSnapshot,
 	type ReactionKind,
@@ -427,7 +428,7 @@ export function EngagementPage({
 													<h1>{talk.title}</h1>
 													<div className="talk-line">
 														<span className="initial" aria-hidden="true">
-															{Array.from(talk.speakerName)[0]}
+															<SpeakerAvatar name={talk.speakerName} />
 														</span>
 														<strong>{talk.speakerName}</strong>
 													</div>
